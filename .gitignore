@@ -1,0 +1,26 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Local user gacha records & private user configs
+# (Keep empty directory but avoid pushing personal UID records)
+data/*.json
+!data/example_records.json
+
+# Local log files
+*.log
+Client.log
+Client_decoded.log
+
+# Environments
+.env
+.venv
+env/
+venv/
+
+# Editor & OS files
+.vscode/
+.idea/
+Thumbs.db
+Desktop.ini

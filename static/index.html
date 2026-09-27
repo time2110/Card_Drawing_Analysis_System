@@ -1,0 +1,1823 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>鸣潮抽卡分析系统 - 网页专业版</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- ECharts CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+  <!-- Confetti CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+  
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              gold: '#facc15',
+              darkgold: '#d97706',
+              purple: '#c084fc',
+              bg: '#0a0d14',
+              card: '#111622',
+              cardHover: '#182030',
+              border: '#1f293d'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    html, body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background-color: #0a0d14;
+      color: #e2e8f0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei", sans-serif;
+    }
+    @media (max-width: 1024px), (max-height: 640px) {
+      html, body {
+        overflow: auto;
+        height: auto;
+      }
+    }
+    .glass-card {
+      background: rgba(17, 22, 34, 0.94);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .gold-glow {
+      box-shadow: 0 0 20px rgba(245, 158, 11, 0.12);
+    }
+    /* 歪字经典圆印章 */
+    .stamp-wai {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 26px;
+      height: 26px;
+      border: 2px solid #ef4444;
+      border-radius: 9999px;
+      color: #ef4444;
+      background: rgba(239, 68, 68, 0.12);
+      font-size: 12px;
+      font-weight: 900;
+      transform: rotate(-10deg);
+      user-select: none;
+      box-shadow: 0 0 8px rgba(239, 68, 68, 0.25);
+      flex-shrink: 0;
+    }
+    /* 轻量美化滚动条 */
+    .thin-scroll::-webkit-scrollbar { width: 5px; height: 5px; }
+    .thin-scroll::-webkit-scrollbar-track { background: transparent; }
+    .thin-scroll::-webkit-scrollbar-thumb { background: #232d42; border-radius: 3px; }
+    .thin-scroll::-webkit-scrollbar-thumb:hover { background: #334155; }
+  </style>
+</head>
+<body class="h-screen w-screen flex flex-col selection:bg-amber-500/30 selection:text-amber-200">
+
+  <!-- 顶部轻量导航条 (全宽，高度 48px) -->
+  <header class="border-b border-brand-border/80 bg-brand-bg/95 backdrop-blur flex-shrink-0 z-40">
+    <div class="w-full px-5 h-12 flex items-center justify-between">
+      <div class="flex items-center space-x-2.5">
+        <div class="w-7 h-7 rounded-lg bg-gradient-to-tr from-amber-500 to-yellow-400 flex items-center justify-center shadow shadow-amber-500/20">
+          <svg class="w-4 h-4 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.4" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+          </svg>
+        </div>
+        <div class="flex items-center space-x-2">
+          <h1 class="text-sm sm:text-base font-bold text-white tracking-wide">鸣潮抽卡分析系统</h1>
+          <span class="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/30 font-medium">网页专业版</span>
+        </div>
+      </div>
+
+      <!-- 右侧控制按钮 -->
+      <div class="flex items-center space-x-2.5">
+        <div class="flex items-center space-x-1.5 bg-slate-900/90 px-2.5 py-1 rounded-lg border border-slate-700/60 text-xs">
+          <span class="text-slate-400">UID:</span>
+          <select id="playerSelect" class="bg-transparent text-amber-300 font-mono font-bold text-xs focus:outline-none cursor-pointer">
+          </select>
+        </div>
+
+        <button id="btnSyncLog" class="flex items-center space-x-1 px-3 py-1.5 rounded-lg bg-gradient-to-r from-amber-500 to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-slate-950 font-bold text-xs transition shadow shadow-amber-500/20 active:scale-95">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+          <span>一键从日志同步</span>
+        </button>
+
+        <button id="btnManualUrl" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs border border-slate-700 transition">
+          手动链接
+        </button>
+
+        <button id="btnOpenConfig" class="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-300 hover:text-amber-200 border border-amber-500/30 text-xs font-semibold transition shadow-sm active:scale-95">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><circle cx="12" cy="12" r="3" stroke-width="2"/></svg>
+          <span>⚙️ 自定义配置</span>
+        </button>
+
+        <div class="h-4 w-px bg-slate-800 hidden sm:block"></div>
+
+        <button id="btnExport" title="导出备份 JSON" class="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white border border-slate-700 transition hidden sm:flex">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+        </button>
+        <button id="btnImportTrigger" title="导入备份 JSON" class="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white border border-slate-700 transition hidden sm:flex">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+        </button>
+        <input type="file" id="fileInput" accept=".json" class="hidden">
+      </div>
+    </div>
+  </header>
+
+  <!-- 网页主体容器（100% 宽度铺满，无黑边，flex-1 纵向自适应填满屏幕） -->
+  <main class="flex-1 w-full px-5 py-2.5 flex flex-col min-h-0 space-y-2 overflow-hidden">
+
+    <!-- 1. 顶部全宽紧凑看板：四大核心指标 + 五星图鉴矩阵 + 欧皇总评 (flex-shrink-0) -->
+    <div class="w-full glass-card rounded-xl p-3 gold-glow flex-shrink-0">
+      <div class="flex flex-col lg:flex-row items-center justify-between gap-3">
+        
+        <!-- 左侧四大指标卡片 (严格与工坊一致) -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-slate-900/80 p-2 rounded-xl border border-slate-800 flex-shrink-0">
+          <div class="text-center px-4">
+            <div id="statWinRate" class="text-xl sm:text-2xl font-black text-amber-400 font-mono">33.3%</div>
+            <div class="text-[11px] text-slate-400 mt-0.5">小保底不歪</div>
+          </div>
+          <div class="text-center px-4 border-l border-slate-800">
+            <div class="text-xl sm:text-2xl font-black text-amber-400 font-mono">
+              <span id="statTotal5Star">13</span><span class="text-xs text-amber-300 font-normal ml-0.5">金</span>
+            </div>
+            <div class="text-[11px] text-slate-400 mt-0.5">五星数</div>
+          </div>
+          <div class="text-center px-4 border-l border-slate-800">
+            <div class="text-xl sm:text-2xl font-black text-amber-400 font-mono">
+              <span id="statAvgChar">64.3</span><span class="text-xs text-amber-300 font-normal ml-0.5">抽</span>
+            </div>
+            <div class="text-[11px] text-slate-400 mt-0.5">每UP角色需</div>
+          </div>
+          <div class="text-center px-4 border-l border-slate-800">
+            <div class="text-xl sm:text-2xl font-black text-amber-400 font-mono">
+              <span id="statAvgWeapon">29</span><span class="text-xs text-amber-300 font-normal ml-0.5">抽</span>
+            </div>
+            <div class="text-[11px] text-slate-400 mt-0.5">每UP武器需</div>
+          </div>
+        </div>
+
+        <!-- 中间：五星图鉴收集矩阵展示 (头像 + 命座角标) -->
+        <div class="flex-1 flex flex-col justify-center min-w-0 px-2">
+          <div class="text-[11px] text-slate-400 mb-1 flex items-center justify-between">
+            <span>共获得限定五星 <b id="countLimited5Star" class="text-amber-400 font-mono">7</b> 个，常驻五星 <b id="countStandard5Star" class="text-amber-400 font-mono">6</b> 个：</span>
+            <span class="text-[10px] text-slate-500 hidden md:inline">右上角为额外命座/数量</span>
+          </div>
+          <div id="summaryAvatarGrid" class="flex flex-wrap gap-2 items-center">
+            <!-- 动态渲染五星头像方块 -->
+          </div>
+        </div>
+
+        <!-- 右侧：欧皇评级与总计指标 -->
+        <div class="flex items-center space-x-3 flex-shrink-0 border-t lg:border-t-0 lg:border-l border-slate-800 pl-0 lg:pl-4 pt-1.5 lg:pt-0">
+          <div>
+            <div class="text-[10px] text-slate-400">综合欧皇指数</div>
+            <div id="rankTitle" class="text-lg sm:text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-300 to-yellow-500">
+              终极无敌至尊欧皇
+            </div>
+            <div class="text-[11px] text-slate-300 font-mono mt-0.5">
+              总 <span id="statTotalPulls" class="text-amber-400 font-bold">493</span> 抽 | 均 <span id="statAvgPity" class="text-amber-400 font-bold">37.9</span> 抽/金
+            </div>
+          </div>
+          <div id="tagsContainer" class="hidden xl:flex flex-col space-y-1">
+            <span class="px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/30 text-[10px] text-amber-300 text-center">天选之子</span>
+            <span class="px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/30 text-[10px] text-amber-300 text-center">欧皇附体</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- 2. 卡池切换 Tab (红框选择区) + 视图模式切换 (分析看板 / 单独全量日志) -->
+    <div class="w-full flex items-center justify-between border-b border-brand-border/60 pb-1.5 flex-shrink-0 gap-3">
+      
+      <!-- 红框选择区：卡池 Tab 列表 -->
+      <div class="flex items-center space-x-2 overflow-x-auto thin-scroll flex-1">
+        <button class="pool-tab-btn active px-3 py-1.5 rounded-lg font-medium text-xs sm:text-sm flex items-center space-x-1.5 transition bg-amber-500/15 text-amber-300 border border-amber-500/30 flex-shrink-0" data-pool="1">
+          <span>🌟 角色活动唤取 (绯雪)</span>
+        </button>
+        <button class="pool-tab-btn px-3 py-1.5 rounded-lg font-medium text-xs sm:text-sm flex items-center space-x-1.5 transition text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 flex-shrink-0" data-pool="2">
+          <span>🗡️ 武器活动唤取 (霜天灼刃)</span>
+        </button>
+        <button class="pool-tab-btn px-3 py-1.5 rounded-lg font-medium text-xs sm:text-sm flex items-center space-x-1.5 transition text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 flex-shrink-0" data-pool="3">
+          <span>👤 角色常驻唤取</span>
+        </button>
+        <button class="pool-tab-btn px-3 py-1.5 rounded-lg font-medium text-xs sm:text-sm flex items-center space-x-1.5 transition text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 flex-shrink-0" data-pool="4">
+          <span>⚔️ 武器常驻唤取</span>
+        </button>
+        <button class="pool-tab-btn px-3 py-1.5 rounded-lg font-medium text-xs sm:text-sm flex items-center space-x-1.5 transition text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 flex-shrink-0" data-pool="5">
+          <span>🎁 新手唤取</span>
+        </button>
+        <button class="pool-tab-btn px-3 py-1.5 rounded-lg font-medium text-xs sm:text-sm flex items-center space-x-1.5 transition text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 flex-shrink-0" data-pool="6">
+          <span>🎯 新手自选唤取</span>
+        </button>
+      </div>
+
+      <!-- 视图模式切换：分析看板 / 单独全量日志 -->
+      <div class="flex items-center space-x-1 bg-slate-900/90 p-1 rounded-xl border border-slate-700/80 flex-shrink-0">
+        <button id="viewBtnAnalysis" class="px-3 py-1 rounded-lg text-xs font-bold transition flex items-center space-x-1.5 bg-amber-500 text-slate-950 shadow shadow-amber-500/20">
+          <span>📊</span>
+          <span>抽卡分析看板</span>
+        </button>
+        <button id="viewBtnLog" class="px-3 py-1 rounded-lg text-xs font-medium text-slate-400 hover:text-white transition flex items-center space-x-1.5">
+          <span>📜</span>
+          <span>单独全量日志</span>
+        </button>
+      </div>
+
+    </div>
+
+    <!-- 3. 视图 A：抽卡分析看板 (左侧流水 + 右侧水位与清晰大图表，100% 满屏) -->
+    <div id="viewAnalysis" class="flex-1 w-full grid grid-cols-1 lg:grid-cols-12 gap-3 min-h-0 overflow-hidden">
+
+      <!-- 左侧：直观横向条形瀑布流 (6 列，高度 100% 铺满可滚动) -->
+      <div class="lg:col-span-6 glass-card rounded-xl p-3.5 flex flex-col h-full min-h-0 overflow-hidden">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-2 mb-2 flex-shrink-0">
+          <div class="flex items-center space-x-2">
+            <span class="text-amber-400 text-sm">📊</span>
+            <h2 class="text-sm font-bold text-white">五星出金流水历史</h2>
+            <span id="fiveStarsBadge" class="text-[11px] bg-amber-500/10 text-amber-400 border border-amber-500/30 px-2 py-0.2 rounded-full font-mono font-bold">共 10 金</span>
+          </div>
+          <span class="text-[11px] text-slate-500">顶部为当前垫抽，按时间倒序</span>
+        </div>
+
+        <!-- 纵向滚动列表容器（100% 填满剩余高度，自带轻量美化滚动条） -->
+        <div id="linearFlowContainer" class="flex-1 overflow-y-auto thin-scroll space-y-2 pr-1.5 min-h-0">
+          <!-- 动态渲染出金进度条行 -->
+        </div>
+      </div>
+
+      <!-- 右侧：当前卡池监控看板 + 2个大号 ECharts 图表 (6 列，高度 100% 铺满) -->
+      <div class="lg:col-span-6 flex flex-col h-full min-h-0 space-y-3 overflow-hidden">
+        
+        <!-- 水位核心看板 -->
+        <div class="glass-card rounded-xl p-3.5 space-y-2.5 flex-shrink-0">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold text-slate-400">当前卡池实时水位</span>
+            <span id="pityStatusTag" class="text-[11px] px-2.5 py-0.5 rounded-md bg-amber-500/15 text-amber-300 border border-amber-500/30 font-bold">小保底 50/50</span>
+          </div>
+
+          <div>
+            <div class="flex items-baseline justify-between">
+              <div class="flex items-baseline space-x-1.5">
+                <span class="text-xs text-slate-400">已垫</span>
+                <span id="currentPityNum" class="text-3xl font-black text-white font-mono">10</span>
+                <span class="text-slate-400 text-xs font-mono" id="maxPityLabel">/ 80 抽</span>
+              </div>
+              <div class="text-xs text-slate-400">
+                距保底还差 <span id="remainingPityNum" class="text-amber-400 font-bold font-mono">70</span> 抽
+              </div>
+            </div>
+            <div class="w-full bg-slate-800 rounded-full h-2.5 mt-2 overflow-hidden">
+              <div id="pityProgressBar" class="bg-gradient-to-r from-emerald-500 to-amber-400 h-2.5 rounded-full transition-all duration-500" style="width: 12.5%"></div>
+            </div>
+          </div>
+
+          <!-- 3个精简指标 -->
+          <div class="grid grid-cols-3 gap-2 pt-1 text-center">
+            <div class="bg-slate-900/70 rounded-lg p-2 border border-slate-800/80">
+              <div id="avg5StarNum" class="text-base font-black text-amber-400 font-mono">31.3</div>
+              <div class="text-[11px] text-slate-500 mt-0.5">五星平均抽数</div>
+            </div>
+            <div class="bg-slate-900/70 rounded-lg p-2 border border-slate-800/80">
+              <div id="avg4StarNum" class="text-base font-black text-purple-400 font-mono">6.6</div>
+              <div class="text-[11px] text-slate-500 mt-0.5">四星平均抽数</div>
+            </div>
+            <div class="bg-slate-900/70 rounded-lg p-2 border border-slate-800/80">
+              <div id="luckScoreNum" class="text-base font-black text-emerald-400 font-mono">72</div>
+              <div class="text-[11px] text-slate-500 mt-0.5" id="luckScoreTitle">欧气充沛</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2个清晰大图表 (填充剩余高度) -->
+        <div class="flex-1 grid grid-cols-1 md:grid-cols-2 gap-3 min-h-0 overflow-hidden">
+          <div class="glass-card rounded-xl p-3 flex flex-col h-full min-h-0">
+            <div class="text-xs font-bold text-slate-300 mb-1 flex items-center space-x-1.5 flex-shrink-0">
+              <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+              <span>出金抽数区间分布</span>
+            </div>
+            <div id="chartDistribution" class="w-full flex-1 min-h-[140px]"></div>
+          </div>
+
+          <div class="glass-card rounded-xl p-3 flex flex-col h-full min-h-0">
+            <div class="text-xs font-bold text-slate-300 mb-1 flex items-center space-x-1.5 flex-shrink-0">
+              <span class="w-2 h-2 rounded-full bg-purple-400"></span>
+              <span>星级抽取比例</span>
+            </div>
+            <div id="chartRatio" class="w-full flex-1 min-h-[140px]"></div>
+          </div>
+        </div>
+
+        <!-- 快速跳转提示条 -->
+        <div class="glass-card rounded-xl px-3.5 py-2 flex items-center justify-between text-xs text-slate-400 hover:text-amber-300 cursor-pointer transition border border-slate-800 flex-shrink-0" id="quickJumpLogBtn">
+          <span class="flex items-center space-x-1.5">
+            <span>📜</span>
+            <span>查看本卡池的完整抽卡明细日志（共 <span id="quickLogCount" class="text-amber-400 font-mono font-bold">396</span> 条）</span>
+          </span>
+          <span class="font-bold text-amber-400 text-xs">前往全量日志 &rarr;</span>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- 4. 视图 B：单独全量唤取日志大屏（按红框卡池切换展示，100% 满屏大表格） -->
+    <div id="viewFullLog" class="flex-1 w-full h-full min-h-0 glass-card rounded-xl p-4 flex flex-col overflow-hidden hidden">
+      
+      <!-- 表格上方控制区 (卡池名称 + 筛选 + 搜索 + 每页条数) -->
+      <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-3 mb-2 flex-shrink-0">
+        <div class="flex items-center space-x-2.5">
+          <span class="text-base font-bold text-white flex items-center space-x-1.5">
+            <span>📜</span>
+            <span id="currentPoolTitle">角色活动唤取</span>
+            <span class="text-xs text-slate-400 font-normal">全量日志明细</span>
+          </span>
+          <span id="logCountBadge" class="text-xs bg-amber-500/10 text-amber-400 border border-amber-500/30 px-2.5 py-0.5 rounded-full font-mono font-bold">396 条</span>
+        </div>
+
+        <div class="flex items-center space-x-2.5">
+          <!-- 星级过滤 -->
+          <div class="flex items-center space-x-1 bg-slate-900/90 p-1 rounded-lg border border-slate-700/60 text-xs">
+            <button class="filter-star-btn active px-3 py-1 rounded text-white bg-slate-700 font-medium" data-star="all">全部</button>
+            <button class="filter-star-btn px-3 py-1 rounded text-slate-400 hover:text-white" data-star="5">仅 5★</button>
+            <button class="filter-star-btn px-3 py-1 rounded text-slate-400 hover:text-white" data-star="45">4★ & 5★</button>
+          </div>
+
+          <!-- 搜索框 -->
+          <input type="text" id="searchInput" placeholder="搜索角色/武器名称..." class="bg-slate-900/90 border border-slate-700/60 px-3 py-1.5 rounded-lg text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 w-44">
+
+          <!-- 每页大小 -->
+          <select id="selectPageSize" class="bg-slate-900 border border-slate-700/60 rounded-lg px-2.5 py-1.5 text-xs text-slate-300 focus:outline-none cursor-pointer">
+            <option value="20" selected>20条/页</option>
+            <option value="30">30条/页</option>
+            <option value="50">50条/页</option>
+            <option value="100">100条/页</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- 表格主体 (100% 纵向自适应填满屏幕) -->
+      <div class="flex-1 overflow-y-auto thin-scroll min-h-0">
+        <table class="w-full text-left text-xs">
+          <thead class="text-xs text-slate-400 bg-slate-900/90 border-b border-slate-800 sticky top-0 z-10 backdrop-blur-sm">
+            <tr>
+              <th class="py-2.5 px-4">序号</th>
+              <th class="py-2.5 px-4">物品名称</th>
+              <th class="py-2.5 px-4">星级</th>
+              <th class="py-2.5 px-4">类型</th>
+              <th class="py-2.5 px-4">唤取时间</th>
+            </tr>
+          </thead>
+          <tbody id="recordsTableBody" class="divide-y divide-slate-800/50 font-mono text-xs">
+            <!-- 动态渲染单页记录 -->
+          </tbody>
+        </table>
+        <div id="tableEmptyNotice" class="text-center py-16 text-slate-500 text-sm hidden">
+          暂无符合条件的抽卡数据
+        </div>
+      </div>
+
+      <!-- 分页导航栏 (底部固定自适应) -->
+      <div class="flex items-center justify-between border-t border-slate-800 pt-2.5 mt-1.5 flex-shrink-0 text-xs">
+        <span id="pageInfoText" class="text-slate-400 font-mono text-xs">第 1 / 27 页 (共 396 条记录)</span>
+        
+        <div class="flex items-center space-x-1.5">
+          <button id="btnFirstPage" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 disabled:opacity-30 disabled:cursor-not-allowed text-xs transition">首页</button>
+          <button id="btnPrevPage" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 disabled:opacity-30 disabled:cursor-not-allowed text-xs transition">上一页</button>
+          <button id="btnNextPage" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 disabled:opacity-30 disabled:cursor-not-allowed text-xs transition">下一页</button>
+          <button id="btnLastPage" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 disabled:opacity-30 disabled:cursor-not-allowed text-xs transition">末页</button>
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- 日志路径选择与同步弹窗 -->
+  <div id="syncLogModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4 hidden">
+    <div class="bg-slate-900 border border-slate-700/80 rounded-2xl max-w-xl w-full p-5 space-y-4 shadow-2xl flex flex-col">
+      <!-- 弹窗标题 -->
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div class="flex items-center space-x-2">
+          <div class="w-8 h-8 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-300 text-base">
+            📂
+          </div>
+          <div>
+            <h3 class="text-sm font-bold text-white">从游戏日志同步抽卡记录</h3>
+            <p class="text-[11px] text-slate-400">鸣潮安装目录或日志目录可能不固定，请选择或配置日志路径</p>
+          </div>
+        </div>
+        <button id="btnCloseSyncLogModal" class="text-slate-400 hover:text-white text-2xl p-1 leading-none">&times;</button>
+      </div>
+
+      <!-- 路径配置区 -->
+      <div class="space-y-3">
+        <div>
+          <label class="block text-[11px] text-slate-300 font-semibold mb-1.5 flex items-center justify-between">
+            <span>日志所在目录或 Client.log 完整文件路径：</span>
+            <span id="syncLogPathHint" class="text-[10px] text-amber-300/80">支持文件夹路径或 .log 文件</span>
+          </label>
+          <div class="flex items-center space-x-2">
+            <input id="syncLogPathInput" type="text" placeholder="例如: C:\software\Wuthering Waves\Wuthering Waves Game\Client\Saved\Logs" class="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500 font-mono" />
+            <button id="btnBrowseLogFile" type="button" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700 text-xs font-semibold transition flex items-center space-x-1 flex-shrink-0">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
+              <span>浏览选择</span>
+            </button>
+            <input type="file" id="syncLogFileInput" accept=".log" class="hidden" />
+          </div>
+        </div>
+
+        <!-- 选中的本地文件提示 -->
+        <div id="selectedLogFileInfo" class="text-[11px] text-emerald-400 bg-emerald-950/40 border border-emerald-500/30 rounded-lg px-3 py-1.5 hidden flex items-center justify-between">
+          <span id="selectedLogFileName" class="truncate font-mono"></span>
+          <button id="btnClearSelectedLogFile" class="text-xs text-slate-400 hover:text-rose-400 ml-2">清除选择</button>
+        </div>
+
+        <!-- 路径检测状态提示条 -->
+        <div id="syncLogDetectionBox" class="rounded-xl p-3 border text-xs space-y-1 bg-slate-950/60 border-slate-800">
+          <div class="flex items-center justify-between">
+            <span class="font-bold text-slate-300 flex items-center space-x-1.5">
+              <span id="syncDetectIcon">🔍</span>
+              <span id="syncDetectTitle">检测状态</span>
+            </span>
+            <button id="btnRecheckLog" class="text-[11px] text-amber-400 hover:underline">重新检测</button>
+          </div>
+          <div id="syncDetectDesc" class="text-[11px] text-slate-400 leading-relaxed">
+            正在检测日志文件有效性...
+          </div>
+        </div>
+
+        <!-- 勾选项 -->
+        <div class="flex items-center space-x-2 pt-1">
+          <input type="checkbox" id="checkRememberLogPath" checked class="w-4 h-4 rounded text-amber-500 focus:ring-0 bg-slate-800 border-slate-700 cursor-pointer" />
+          <label for="checkRememberLogPath" class="text-xs text-slate-300 select-none cursor-pointer">
+            记住此目录为默认路径（下次同步自动使用）
+          </label>
+        </div>
+      </div>
+
+      <!-- 底部控制按钮 -->
+      <div class="flex items-center justify-end space-x-2.5 border-t border-slate-800 pt-3">
+        <button id="btnCancelSyncLogModal" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition">
+          取消
+        </button>
+        <button id="btnConfirmSyncLog" class="flex items-center space-x-1.5 px-5 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-slate-950 font-bold text-xs shadow-lg shadow-amber-500/20 transition active:scale-95">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+          <span id="btnConfirmSyncText">确认并开始同步</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 手动链接模态框 -->
+  <div id="manualUrlModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-brand-card border border-brand-border rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-brand-border pb-3">
+        <h3 class="text-sm font-bold text-amber-400">手动输入抽卡记录链接 (URL)</h3>
+        <button id="btnCloseModal" class="text-slate-400 hover:text-white text-lg">&times;</button>
+      </div>
+      <p class="text-xs text-slate-400 leading-relaxed">
+        可直接粘贴游戏内抽卡记录 URL（以 https://aki-gm-resources 开头）：
+      </p>
+      <textarea id="manualUrlInput" rows="4" placeholder="https://aki-gm-resources.../record?svr_id=...&player_id=..." class="w-full bg-slate-950 border border-brand-border rounded-xl p-3 text-xs text-slate-200 focus:outline-none focus:border-amber-500 font-mono"></textarea>
+      <div class="flex items-center justify-end space-x-3 pt-1">
+        <button id="btnCancelModal" class="px-3.5 py-1.5 rounded-xl bg-slate-800 text-slate-300 text-xs">取消</button>
+        <button id="btnSubmitManualUrl" class="px-4 py-1.5 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs">开始同步</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 自定义配置控制中心模态框 -->
+  <div id="configModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4 hidden">
+    <div class="bg-slate-900 border border-slate-700/80 rounded-2xl max-w-3xl w-full p-4 sm:p-5 space-y-3 sm:space-y-4 shadow-2xl flex flex-col max-h-[92vh] overflow-hidden">
+      
+      <!-- 模态框顶部 -->
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3 flex-shrink-0">
+        <div class="flex items-center space-x-2">
+          <div class="w-7 h-7 rounded-lg bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-300 text-sm">
+            ⚙️
+          </div>
+          <div>
+            <h3 class="text-sm font-bold text-white">控制中心：自定义角色、头像与链接</h3>
+            <p class="text-[11px] text-slate-400">配置角色名称、专属头像图片、ID 映射及抽卡记录 URL，保存后即刻生效</p>
+          </div>
+        </div>
+        <button id="btnCloseConfigModal" class="text-slate-400 hover:text-white text-2xl p-1 leading-none">&times;</button>
+      </div>
+
+      <!-- Tab 切换 -->
+      <div class="flex items-center space-x-2 border-b border-slate-800 pb-2 flex-shrink-0">
+        <button id="cfgTabBtnChars" class="px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center space-x-1.5 bg-amber-500 text-slate-950">
+          <span>🎭 角色与头像</span>
+        </button>
+        <button id="cfgTabBtnUrl" class="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white transition flex items-center space-x-1.5">
+          <span>🔗 抽卡链接配置</span>
+        </button>
+        <button id="cfgTabBtnAlias" class="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white transition flex items-center space-x-1.5">
+          <span>🔀 别名/国际服映射</span>
+        </button>
+      </div>
+
+      <!-- 选项卡内容区 (滚动) -->
+      <div class="flex-1 min-h-0 overflow-y-auto thin-scroll space-y-3 sm:space-y-4 pr-1">
+        
+        <!-- Tab 1: 角色与头像配置 -->
+        <div id="cfgTabContentChars" class="space-y-3">
+          <!-- 编辑/新增表单 -->
+          <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-3 space-y-2.5">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-amber-400 flex items-center space-x-1.5">
+                <span>✏️</span>
+                <span id="charFormTitle">新增或编辑角色 / 武器</span>
+              </span>
+              <button id="btnResetCharForm" class="text-[11px] text-slate-400 hover:text-amber-300 transition">清空输入</button>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              <div>
+                <label class="block text-[11px] text-slate-400 mb-1">名称 (如: 绯雪)</label>
+                <input id="inputCharName" type="text" placeholder="角色或武器标准名称" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-amber-500 font-sans" />
+              </div>
+
+              <div>
+                <label class="block text-[11px] text-slate-400 mb-1">资源 ID (如: 1108)</label>
+                <input id="inputCharId" type="text" placeholder="数值 ID (如 1108)" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-amber-300 focus:outline-none focus:border-amber-500 font-mono" />
+              </div>
+
+              <div>
+                <label class="block text-[11px] text-slate-400 mb-1">星级 & 分类</label>
+                <div class="grid grid-cols-2 gap-1.5">
+                  <select id="selectCharStar" class="bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none">
+                    <option value="5">5★ 黄金</option>
+                    <option value="4">4★ 紫彩</option>
+                    <option value="3">3★ 蓝白</option>
+                  </select>
+                  <select id="selectCharCategory" class="bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none">
+                    <option value="角色">共鸣者(角色)</option>
+                    <option value="武器">武器</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              <div>
+                <label class="block text-[11px] text-slate-400 mb-1">属性元素</label>
+                <select id="selectCharElement" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none">
+                  <option value="冷凝">冷凝 (冰)</option>
+                  <option value="衍射">衍射 (光)</option>
+                  <option value="热熔">热熔 (火)</option>
+                  <option value="湮灭">湮灭 (暗)</option>
+                  <option value="气动">气动 (风)</option>
+                  <option value="导电">导电 (雷)</option>
+                  <option value="武器">武器通用</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-[11px] text-slate-400 mb-1">卡池类型</label>
+                <select id="selectCharType" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none">
+                  <option value="UP">UP限定</option>
+                  <option value="常驻">常驻</option>
+                  <option value="主角">主角</option>
+                  <option value="4星">4星常规</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-[11px] text-slate-400 mb-1">武器类型</label>
+                <input id="inputCharWeapon" type="text" placeholder="迅刀 / 重刃 / 音感仪 / 佩枪 / 臂铠" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-amber-500" />
+              </div>
+            </div>
+
+            <!-- 头像链接与实时预览 -->
+            <div class="flex items-center space-x-3 pt-1">
+              <div class="w-12 h-12 rounded-xl bg-slate-900 border border-slate-700 overflow-hidden flex-shrink-0 flex items-center justify-center p-0.5">
+                <img id="charAvatarPreview" src="https://fastly.jsdelivr.net/gh/ryanbenson/wuthering-waves-assets@master/images/Hiyuki.png" alt="头像预览" class="w-full h-full object-cover rounded-lg" onerror="this.src='https://api.iconify.design/lucide:user.svg';" />
+              </div>
+              <div class="flex-1">
+                <label class="block text-[11px] text-slate-400 mb-1">头像图片链接 (支持任意图片 URL / 也可以为空)</label>
+                <input id="inputCharAvatar" type="text" placeholder="https://.../Avatar.png" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-amber-500 font-mono" />
+              </div>
+              <div class="flex items-end">
+                <button id="btnSaveChar" class="px-4 py-1.5 rounded-lg bg-gradient-to-r from-amber-500 to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-slate-950 font-bold text-xs shadow-md transition active:scale-95">
+                  保存此条目
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 已有角色库清单 (可搜索过滤) -->
+          <div class="space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-semibold text-slate-300">已收录条目库 (点击任一条目可直接编辑修改)</span>
+              <input id="searchCharInput" type="text" placeholder="🔍 搜索名称/ID..." class="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-slate-200 focus:outline-none focus:border-amber-500 w-44" />
+            </div>
+
+            <div id="charsGridContainer" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 max-h-56 overflow-y-auto thin-scroll p-1">
+              <!-- 动态渲染角色卡片 -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 2: 抽卡链接配置 -->
+        <div id="cfgTabContentUrl" class="space-y-4 hidden">
+          <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-4 space-y-3">
+            <h4 class="text-xs font-bold text-amber-400 flex items-center space-x-1.5">
+              <span>🔗</span>
+              <span>抽卡记录链接配置 (Gacha URL)</span>
+            </h4>
+            <p class="text-xs text-slate-400 leading-relaxed">
+              在此保存你的专属抽卡链接。保存后，点击顶栏【一键从日志同步】将优先使用此链接进行增量同步，免去频繁读取日志的麻烦。
+            </p>
+
+            <div id="detectedUrlBox" class="bg-slate-900/90 border border-slate-700/80 rounded-xl p-2.5 text-xs space-y-1.5 hidden">
+              <div class="flex items-center justify-between text-[11px] text-emerald-400 font-semibold">
+                <span>✨ 自动从当前 Client.log 检测到最新链接：</span>
+                <button id="btnFillDetectedUrl" class="text-amber-300 hover:underline">一键填入 ⬇️</button>
+              </div>
+              <div id="detectedUrlText" class="text-[11px] text-slate-400 font-mono break-all line-clamp-2"></div>
+            </div>
+
+            <div>
+              <label class="block text-[11px] text-slate-400 mb-1">自定义抽卡链接 (支持完整 URL 或包含 player_id 的链接)</label>
+              <textarea id="cfgCustomUrlInput" rows="4" placeholder="https://aki-gm-resources.../record?svr_id=...&player_id=..." class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-xs text-slate-200 focus:outline-none focus:border-amber-500 font-mono"></textarea>
+            </div>
+
+            <div class="flex items-center justify-between pt-1">
+              <button id="btnClearCustomUrl" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs transition">
+                🧹 清空自定义链接
+              </button>
+              <div class="flex items-center space-x-2">
+                <button id="btnSaveCustomUrl" class="px-4 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition shadow-sm">
+                  💾 保存链接
+                </button>
+                <button id="btnSaveAndSyncUrl" class="px-4 py-1.5 rounded-lg bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-950 font-bold text-xs transition shadow-md active:scale-95">
+                  🚀 保存并立即同步
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 3: 别名与多语言映射 -->
+        <div id="cfgTabContentAlias" class="space-y-4 hidden">
+          <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-4 space-y-3">
+            <h4 class="text-xs font-bold text-amber-400 flex items-center space-x-1.5">
+              <span>🔀</span>
+              <span>别名与多语言映射 (支持港澳台/国际服/英文代号)</span>
+            </h4>
+            <p class="text-xs text-slate-400 leading-relaxed">
+              若在某些客户端或历史导出的数据中，角色名称显示为英文代号（例如 <code>Hiyuki</code>）或繁体字（例如 <code>緋雪</code>），可在此将其关联到标准中文名称。
+            </p>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 items-end">
+              <div>
+                <label class="block text-[11px] text-slate-400 mb-1">外文代号 / 客户端别名</label>
+                <input id="inputAliasKey" type="text" placeholder="例如: Hiyuki 或 緋雪" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-amber-500" />
+              </div>
+              <div class="flex items-center space-x-2">
+                <div class="flex-1">
+                  <label class="block text-[11px] text-slate-400 mb-1">映射的目标标准名称</label>
+                  <input id="inputAliasVal" type="text" placeholder="例如: 绯雪" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-amber-300 focus:outline-none focus:border-amber-500 font-semibold" />
+                </div>
+                <button id="btnSaveAlias" class="px-4 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition active:scale-95">
+                  添加映射
+                </button>
+              </div>
+            </div>
+
+            <!-- 已配置别名清单 -->
+            <div class="mt-3">
+              <span class="text-xs font-semibold text-slate-300 block mb-1.5">当前生效的别名规则列表</span>
+              <div id="aliasListContainer" class="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-48 overflow-y-auto thin-scroll p-1">
+                <!-- 动态渲染 -->
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- 底部关闭按钮 -->
+      <div class="flex items-center justify-end border-t border-slate-800 pt-3 flex-shrink-0">
+        <button id="btnFinishConfig" class="px-5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition">
+          完成并关闭
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Toast 提示 -->
+  <div id="toast" class="fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 transition-all duration-300 max-w-md px-4 py-3 rounded-2xl shadow-2xl flex items-center space-x-2 text-xs font-semibold"></div>
+
+  <script>
+    // 全局数据状态
+    const state = {
+      analysisData: null,
+      currentPool: "1",
+      currentView: "analysis", // 'analysis' or 'log'
+      currentStarFilter: "all",
+      searchQuery: "",
+      poolRecords: [],
+      recordsPage: 1,
+      recordsPerPage: 20
+    };
+
+    let distChart = null;
+    let ratioChart = null;
+
+    const POOL_NAMES_MAP = {
+      "1": "🌟 角色活动唤取 (绯雪)",
+      "2": "🗡️ 武器活动唤取 (霜天灼刃)",
+      "3": "👤 角色常驻唤取",
+      "4": "⚔️ 武器常驻唤取",
+      "5": "🎁 新手唤取",
+      "6": "🎯 新手自选唤取"
+    };
+
+    function showToast(msg, type = "success") {
+      const toast = document.getElementById("toast");
+      toast.className = `fixed bottom-6 right-6 z-50 transform translate-y-0 opacity-100 transition-all duration-300 max-w-md px-4 py-3 rounded-2xl shadow-2xl flex items-center space-x-2 text-xs font-semibold ${
+        type === "success" ? "bg-emerald-950 text-emerald-200 border border-emerald-500/40" : "bg-rose-950 text-rose-200 border border-rose-500/40"
+      }`;
+      toast.innerHTML = `<span>${type === 'success' ? '✅' : '⚠️'}</span><span>${msg}</span>`;
+      setTimeout(() => {
+        toast.className = toast.className.replace("translate-y-0 opacity-100", "translate-y-20 opacity-0");
+      }, 4000);
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      initCharts();
+      bindEvents();
+      loadAnalysisData();
+    });
+
+    function initCharts() {
+      distChart = echarts.init(document.getElementById("chartDistribution"));
+      ratioChart = echarts.init(document.getElementById("chartRatio"));
+      window.addEventListener("resize", () => {
+        if (state.currentView === "analysis") {
+          distChart && distChart.resize();
+          ratioChart && ratioChart.resize();
+        }
+      });
+    }
+
+    function switchViewMode(mode) {
+      state.currentView = mode;
+      const btnAnalysis = document.getElementById("viewBtnAnalysis");
+      const btnLog = document.getElementById("viewBtnLog");
+      const viewAnalysis = document.getElementById("viewAnalysis");
+      const viewFullLog = document.getElementById("viewFullLog");
+
+      if (mode === "analysis") {
+        btnAnalysis.className = "px-3 py-1 rounded-lg text-xs font-bold transition flex items-center space-x-1.5 bg-amber-500 text-slate-950 shadow shadow-amber-500/20";
+        btnLog.className = "px-3 py-1 rounded-lg text-xs font-medium text-slate-400 hover:text-white transition flex items-center space-x-1.5";
+        viewAnalysis.classList.remove("hidden");
+        viewFullLog.classList.add("hidden");
+        setTimeout(() => {
+          distChart && distChart.resize();
+          ratioChart && ratioChart.resize();
+        }, 60);
+      } else {
+        btnLog.className = "px-3 py-1 rounded-lg text-xs font-bold transition flex items-center space-x-1.5 bg-amber-500 text-slate-950 shadow shadow-amber-500/20";
+        btnAnalysis.className = "px-3 py-1 rounded-lg text-xs font-medium text-slate-400 hover:text-white transition flex items-center space-x-1.5";
+        viewAnalysis.classList.add("hidden");
+        viewFullLog.classList.remove("hidden");
+        renderTable();
+      }
+    }
+
+    function bindEvents() {
+      // 视图模式切换按键
+      document.getElementById("viewBtnAnalysis").addEventListener("click", () => switchViewMode("analysis"));
+      document.getElementById("viewBtnLog").addEventListener("click", () => switchViewMode("log"));
+      document.getElementById("quickJumpLogBtn").addEventListener("click", () => switchViewMode("log"));
+
+      // 一键同步按钮：点击弹出日志路径选择与确认弹窗
+      document.getElementById("btnSyncLog").addEventListener("click", openSyncLogModal);
+
+      // 手动链接模态框
+      document.getElementById("btnManualUrl").addEventListener("click", () => {
+        document.getElementById("manualUrlModal").classList.remove("hidden");
+      });
+      document.getElementById("btnCloseModal").addEventListener("click", () => {
+        document.getElementById("manualUrlModal").classList.add("hidden");
+      });
+      document.getElementById("btnCancelModal").addEventListener("click", () => {
+        document.getElementById("manualUrlModal").classList.add("hidden");
+      });
+      document.getElementById("btnSubmitManualUrl").addEventListener("click", () => {
+        const url = document.getElementById("manualUrlInput").value.trim();
+        if (!url) {
+          showToast("请输入抽卡链接！", "error");
+          return;
+        }
+        document.getElementById("manualUrlModal").classList.add("hidden");
+        triggerSync(url);
+      });
+
+      // 卡池切换 (红框区域按钮)
+      document.querySelectorAll(".pool-tab-btn").forEach(btn => {
+        btn.addEventListener("click", (e) => {
+          document.querySelectorAll(".pool-tab-btn").forEach(b => {
+            b.className = "pool-tab-btn px-3 py-1.5 rounded-lg font-medium text-xs sm:text-sm flex items-center space-x-1.5 transition text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 flex-shrink-0";
+          });
+          btn.className = "pool-tab-btn active px-3 py-1.5 rounded-lg font-medium text-xs sm:text-sm flex items-center space-x-1.5 transition bg-amber-500/15 text-amber-300 border border-amber-500/30 flex-shrink-0";
+          state.currentPool = btn.dataset.pool;
+          state.recordsPage = 1;
+
+          // 更新卡池标题
+          document.getElementById("currentPoolTitle").innerText = POOL_NAMES_MAP[state.currentPool] || "唤取记录";
+
+          renderPoolOverview();
+          loadPoolRecords();
+        });
+      });
+
+      // 切换 UID
+      document.getElementById("playerSelect").addEventListener("change", (e) => {
+        state.recordsPage = 1;
+        loadAnalysisData(e.target.value);
+      });
+
+      // 导出数据
+      document.getElementById("btnExport").addEventListener("click", () => {
+        window.open("/api/export", "_blank");
+      });
+
+      // 导入数据
+      document.getElementById("btnImportTrigger").addEventListener("click", () => {
+        document.getElementById("fileInput").click();
+      });
+      document.getElementById("fileInput").addEventListener("change", handleFileImport);
+
+      // 星级筛选按钮
+      document.querySelectorAll(".filter-star-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+          document.querySelectorAll(".filter-star-btn").forEach(b => {
+            b.className = "filter-star-btn px-3 py-1 rounded text-slate-400 hover:text-white";
+          });
+          btn.className = "filter-star-btn active px-3 py-1 rounded text-white bg-slate-700 font-medium";
+          state.currentStarFilter = btn.dataset.star;
+          state.recordsPage = 1;
+          renderTable();
+        });
+      });
+
+      // 搜索框
+      document.getElementById("searchInput").addEventListener("input", (e) => {
+        state.searchQuery = e.target.value.trim().toLowerCase();
+        state.recordsPage = 1;
+        renderTable();
+      });
+
+      // 每页数量选择
+      document.getElementById("selectPageSize").addEventListener("change", (e) => {
+        state.recordsPerPage = parseInt(e.target.value);
+        state.recordsPage = 1;
+        renderTable();
+      });
+
+      // 分页按键
+      document.getElementById("btnFirstPage").addEventListener("click", () => {
+        state.recordsPage = 1;
+        renderTable();
+      });
+      document.getElementById("btnPrevPage").addEventListener("click", () => {
+        if (state.recordsPage > 1) {
+          state.recordsPage--;
+          renderTable();
+        }
+      });
+      document.getElementById("btnNextPage").addEventListener("click", () => {
+        state.recordsPage++;
+        renderTable();
+      });
+      document.getElementById("btnLastPage").addEventListener("click", () => {
+        state.recordsPage = 999999;
+        renderTable();
+      });
+
+      // 初始化自定义配置中心事件
+      initConfigEvents();
+
+      // 初始化日志路径选择与同步弹窗事件
+      initSyncLogEvents();
+    }
+
+    // ================= 日志路径选择与同步逻辑 =================
+    let selectedLogBase64 = null;
+    let selectedLogFileName = null;
+    let checkLogTimeout = null;
+
+    async function openSyncLogModal() {
+      document.getElementById("syncLogModal").classList.remove("hidden");
+      try {
+        const resp = await fetch("/api/status");
+        const res = await resp.json();
+        const input = document.getElementById("syncLogPathInput");
+        if (!input.value.trim()) {
+          input.value = res.customLogPath || res.effectiveLogPath || res.defaultLogPath || "";
+        }
+      } catch (e) {
+        console.error("获取日志默认路径失败:", e);
+      }
+      checkLogPath();
+    }
+
+    function closeSyncLogModal() {
+      document.getElementById("syncLogModal").classList.add("hidden");
+    }
+
+    async function checkLogPath() {
+      const box = document.getElementById("syncLogDetectionBox");
+      const icon = document.getElementById("syncDetectIcon");
+      const title = document.getElementById("syncDetectTitle");
+      const desc = document.getElementById("syncDetectDesc");
+      const path = document.getElementById("syncLogPathInput").value.trim();
+
+      icon.innerText = "⏳";
+      title.className = "font-bold text-slate-300";
+      title.innerText = "正在检测日志...";
+      desc.className = "text-[11px] text-slate-400 leading-relaxed";
+      desc.innerText = "正在分析指定的日志文件及抽卡链接凭据...";
+      box.className = "rounded-xl p-3 border text-xs space-y-1 bg-slate-950/60 border-slate-800";
+
+      try {
+        const resp = await fetch("/api/check_log", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            path: path,
+            logBase64: selectedLogBase64 || ""
+          })
+        });
+        const res = await resp.json();
+        if (res.success && res.hasUrl) {
+          box.className = "rounded-xl p-3 border text-xs space-y-1 bg-emerald-950/30 border-emerald-500/40";
+          icon.innerText = "✅";
+          title.className = "font-bold text-emerald-300";
+          title.innerText = `检测正常 - 有效抽卡凭证`;
+          desc.className = "text-[11px] text-emerald-200/90 leading-relaxed";
+          desc.innerText = `成功定位到有效日志，解析出玩家 UID: ${res.playerId || '已就绪'}。点击下方按钮即可开始增量同步！`;
+        } else if (!res.hasUrl && res.path) {
+          box.className = "rounded-xl p-3 border text-xs space-y-1 bg-amber-950/30 border-amber-500/40";
+          icon.innerText = "⚠️";
+          title.className = "font-bold text-amber-300";
+          title.innerText = "未在日志中检测到抽卡链接";
+          desc.className = "text-[11px] text-amber-200/90 leading-relaxed";
+          desc.innerText = res.message || "日志文件存在，但没有记录或链接已过期。请先启动游戏并在游戏内打开一次【唤取记录】历史页面，然后再点击【重新检测】！";
+        } else {
+          box.className = "rounded-xl p-3 border text-xs space-y-1 bg-rose-950/30 border-rose-500/40";
+          icon.innerText = "❌";
+          title.className = "font-bold text-rose-300";
+          title.innerText = "路径无效或文件不存在";
+          desc.className = "text-[11px] text-rose-200/90 leading-relaxed";
+          desc.innerText = res.message || "未能找到 Client.log 文件，请检查路径是否正确，或点击【浏览选择】手动定位文件。";
+        }
+      } catch (err) {
+        box.className = "rounded-xl p-3 border text-xs space-y-1 bg-rose-950/30 border-rose-500/40";
+        icon.innerText = "❌";
+        title.className = "font-bold text-rose-300";
+        title.innerText = "检测请求出错";
+        desc.className = "text-[11px] text-rose-200/90 leading-relaxed";
+        desc.innerText = err.message;
+      }
+    }
+
+    function initSyncLogEvents() {
+      // 弹窗开关
+      document.getElementById("btnCloseSyncLogModal").addEventListener("click", closeSyncLogModal);
+      document.getElementById("btnCancelSyncLogModal").addEventListener("click", closeSyncLogModal);
+
+      // 手动触发检测
+      document.getElementById("btnRecheckLog").addEventListener("click", checkLogPath);
+
+      // 输入路径时防抖自动检测
+      document.getElementById("syncLogPathInput").addEventListener("input", () => {
+        clearTimeout(checkLogTimeout);
+        checkLogTimeout = setTimeout(checkLogPath, 500);
+      });
+
+      // 浏览文件
+      const fileInput = document.getElementById("syncLogFileInput");
+      document.getElementById("btnBrowseLogFile").addEventListener("click", () => {
+        fileInput.click();
+      });
+
+      fileInput.addEventListener("change", async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        selectedLogFileName = file.name;
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const arrayBuffer = event.target.result;
+          let binary = '';
+          const bytes = new Uint8Array(arrayBuffer);
+          const len = bytes.byteLength;
+          for (let i = 0; i < len; i++) {
+            binary += String.fromCharCode(bytes[i]);
+          }
+          selectedLogBase64 = btoa(binary);
+
+          const fileInfo = document.getElementById("selectedLogFileInfo");
+          const nameSpan = document.getElementById("selectedLogFileName");
+          fileInfo.classList.remove("hidden");
+          nameSpan.innerText = `已选本地文件: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+          checkLogPath();
+        };
+        reader.readAsArrayBuffer(file);
+      });
+
+      // 清除选中的本地文件
+      document.getElementById("btnClearSelectedLogFile").addEventListener("click", () => {
+        selectedLogBase64 = null;
+        selectedLogFileName = null;
+        fileInput.value = "";
+        document.getElementById("selectedLogFileInfo").classList.add("hidden");
+        checkLogPath();
+      });
+
+      // 确认并同步
+      document.getElementById("btnConfirmSyncLog").addEventListener("click", async () => {
+        const logPath = document.getElementById("syncLogPathInput").value.trim();
+        const rememberPath = document.getElementById("checkRememberLogPath").checked;
+        const btn = document.getElementById("btnConfirmSyncLog");
+        const btnText = document.getElementById("btnConfirmSyncText");
+
+        btn.disabled = true;
+        btnText.innerText = "正在同步中...";
+
+        try {
+          const resp = await fetch("/api/sync", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              logPath: logPath,
+              logBase64: selectedLogBase64 || "",
+              rememberPath: rememberPath
+            })
+          });
+          const res = await resp.json();
+          if (res.success) {
+            closeSyncLogModal();
+            showToast(res.message, "success");
+            confetti({ particleCount: 80, spread: 60, origin: { y: 0.7 } });
+            loadAnalysisData(res.playerId);
+          } else {
+            showToast(res.message, "error");
+          }
+        } catch (e) {
+          showToast("同步请求失败: " + e.message, "error");
+        } finally {
+          btn.disabled = false;
+          btnText.innerText = "确认并开始同步";
+        }
+      });
+    }
+
+    // ================= 自定义配置中心控制逻辑 =================
+    const configState = {
+      configData: null,
+      selectedTab: "chars",
+      charsSearch: ""
+    };
+
+    function initConfigEvents() {
+      // 打开/关闭模态框
+      document.getElementById("btnOpenConfig").addEventListener("click", openConfigModal);
+      document.getElementById("btnCloseConfigModal").addEventListener("click", closeConfigModal);
+      document.getElementById("btnFinishConfig").addEventListener("click", closeConfigModal);
+
+      // 模态框 Tab 切换
+      document.getElementById("cfgTabBtnChars").addEventListener("click", () => switchConfigTab("chars"));
+      document.getElementById("cfgTabBtnUrl").addEventListener("click", () => switchConfigTab("url"));
+      document.getElementById("cfgTabBtnAlias").addEventListener("click", () => switchConfigTab("alias"));
+
+      // 头像图片实时预览
+      const avatarInput = document.getElementById("inputCharAvatar");
+      avatarInput.addEventListener("input", (e) => {
+        const url = e.target.value.trim();
+        document.getElementById("charAvatarPreview").src = url || "https://fastly.jsdelivr.net/gh/ryanbenson/wuthering-waves-assets@master/images/Hiyuki.png";
+      });
+
+      // 重置表单
+      document.getElementById("btnResetCharForm").addEventListener("click", resetCharForm);
+
+      // 保存角色/武器
+      document.getElementById("btnSaveChar").addEventListener("click", handleSaveCharacter);
+
+      // 搜索角色
+      document.getElementById("searchCharInput").addEventListener("input", (e) => {
+        configState.charsSearch = e.target.value.trim().toLowerCase();
+        filterAndRenderChars();
+      });
+
+      // 一键填入检测到的 URL
+      document.getElementById("btnFillDetectedUrl").addEventListener("click", () => {
+        if (configState.configData && configState.configData.detectedUrl) {
+          document.getElementById("cfgCustomUrlInput").value = configState.configData.detectedUrl;
+        }
+      });
+
+      // 保存自定义 URL
+      document.getElementById("btnSaveCustomUrl").addEventListener("click", () => handleSaveCustomUrl(false));
+      document.getElementById("btnSaveAndSyncUrl").addEventListener("click", () => handleSaveCustomUrl(true));
+      document.getElementById("btnClearCustomUrl").addEventListener("click", handleClearCustomUrl);
+
+      // 保存别名映射
+      document.getElementById("btnSaveAlias").addEventListener("click", handleSaveAlias);
+    }
+
+    async function openConfigModal() {
+      document.getElementById("configModal").classList.remove("hidden");
+      await loadConfigData();
+    }
+
+    function closeConfigModal() {
+      document.getElementById("configModal").classList.add("hidden");
+    }
+
+    function switchConfigTab(tab) {
+      configState.selectedTab = tab;
+      const btnChars = document.getElementById("cfgTabBtnChars");
+      const btnUrl = document.getElementById("cfgTabBtnUrl");
+      const btnAlias = document.getElementById("cfgTabBtnAlias");
+      const contentChars = document.getElementById("cfgTabContentChars");
+      const contentUrl = document.getElementById("cfgTabContentUrl");
+      const contentAlias = document.getElementById("cfgTabContentAlias");
+
+      const activeClass = "px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center space-x-1.5 bg-amber-500 text-slate-950";
+      const inactiveClass = "px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white transition flex items-center space-x-1.5";
+
+      btnChars.className = tab === "chars" ? activeClass : inactiveClass;
+      btnUrl.className = tab === "url" ? activeClass : inactiveClass;
+      btnAlias.className = tab === "alias" ? activeClass : inactiveClass;
+
+      contentChars.classList.toggle("hidden", tab !== "chars");
+      contentUrl.classList.toggle("hidden", tab !== "url");
+      contentAlias.classList.toggle("hidden", tab !== "alias");
+    }
+
+    async function loadConfigData() {
+      try {
+        const resp = await fetch("/api/config");
+        const res = await resp.json();
+        if (res.success && res.config) {
+          configState.configData = res.config;
+          // 渲染角色列表
+          filterAndRenderChars();
+          // 渲染别名列表
+          renderAliasList();
+          // 填充 URL
+          const urlInput = document.getElementById("cfgCustomUrlInput");
+          urlInput.value = res.config.customUrl || "";
+          
+          const detectedBox = document.getElementById("detectedUrlBox");
+          const detectedText = document.getElementById("detectedUrlText");
+          if (res.config.detectedUrl) {
+            detectedBox.classList.remove("hidden");
+            detectedText.innerText = res.config.detectedUrl;
+          } else {
+            detectedBox.classList.add("hidden");
+          }
+        }
+      } catch (e) {
+        console.error("加载配置失败:", e);
+      }
+    }
+
+    function filterAndRenderChars() {
+      if (!configState.configData) return;
+      const container = document.getElementById("charsGridContainer");
+      const list = configState.configData.charactersList || [];
+      const q = configState.charsSearch;
+
+      const filtered = q ? list.filter(c => (c.name || '').toLowerCase().includes(q) || String(c.id || '').includes(q)) : list;
+
+      container.innerHTML = filtered.map(c => {
+        const is5 = c.star === 5;
+        const starColor = is5 ? "text-amber-400 border-amber-500/40 bg-amber-500/10" : "text-purple-300 border-purple-500/40 bg-purple-500/10";
+        const avatarSrc = c.avatar || "https://fastly.jsdelivr.net/gh/ryanbenson/wuthering-waves-assets@master/images/Hiyuki.png";
+        
+        return `
+          <div class="char-card-item bg-slate-900 hover:bg-slate-800/80 border border-slate-800 hover:border-amber-500/40 rounded-xl p-2 flex items-center space-x-2 transition cursor-pointer" onclick='populateCharForm(${JSON.stringify(c)})'>
+            <div class="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0 bg-slate-950 border border-slate-700">
+              <img src="${avatarSrc}" alt="${c.name}" class="w-full h-full object-cover" onerror="this.src='https://api.iconify.design/lucide:user.svg';" />
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center space-x-1">
+                <span class="text-xs font-bold text-white truncate">${c.name}</span>
+                <span class="px-1 py-0.2 rounded text-[9px] border font-bold ${starColor}">${c.star}★</span>
+              </div>
+              <div class="text-[10px] text-slate-400 flex items-center space-x-1.5 mt-0.5">
+                <span>${c.element || ''}</span>
+                ${c.id ? `<span class="font-mono text-amber-300/80">ID:${c.id}</span>` : ''}
+              </div>
+            </div>
+            <button class="text-slate-500 hover:text-amber-300 text-xs px-1">✏️</button>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function populateCharForm(charObj) {
+      document.getElementById("charFormTitle").innerText = `编辑: ${charObj.name}`;
+      document.getElementById("inputCharName").value = charObj.name || "";
+      document.getElementById("inputCharId").value = charObj.id || "";
+      document.getElementById("selectCharStar").value = String(charObj.star || 5);
+      document.getElementById("selectCharCategory").value = charObj.category || "角色";
+      document.getElementById("selectCharElement").value = charObj.element || "冷凝";
+      document.getElementById("selectCharType").value = charObj.type || "UP";
+      document.getElementById("inputCharWeapon").value = charObj.weapon || "";
+      document.getElementById("inputCharAvatar").value = charObj.avatar || "";
+      document.getElementById("charAvatarPreview").src = charObj.avatar || "https://fastly.jsdelivr.net/gh/ryanbenson/wuthering-waves-assets@master/images/Hiyuki.png";
+    }
+
+    function resetCharForm() {
+      document.getElementById("charFormTitle").innerText = "新增或编辑角色 / 武器";
+      document.getElementById("inputCharName").value = "";
+      document.getElementById("inputCharId").value = "";
+      document.getElementById("selectCharStar").value = "5";
+      document.getElementById("selectCharCategory").value = "角色";
+      document.getElementById("selectCharElement").value = "冷凝";
+      document.getElementById("selectCharType").value = "UP";
+      document.getElementById("inputCharWeapon").value = "";
+      document.getElementById("inputCharAvatar").value = "";
+      document.getElementById("charAvatarPreview").src = "https://fastly.jsdelivr.net/gh/ryanbenson/wuthering-waves-assets@master/images/Hiyuki.png";
+    }
+
+    async function handleSaveCharacter() {
+      const name = document.getElementById("inputCharName").value.trim();
+      if (!name) {
+        showToast("请输入角色或武器名称！", "error");
+        return;
+      }
+      const charId = document.getElementById("inputCharId").value.trim();
+      const star = parseInt(document.getElementById("selectCharStar").value) || 5;
+      const category = document.getElementById("selectCharCategory").value;
+      const element = document.getElementById("selectCharElement").value;
+      const cType = document.getElementById("selectCharType").value;
+      const weapon = document.getElementById("inputCharWeapon").value.trim();
+      const avatar = document.getElementById("inputCharAvatar").value.trim();
+
+      const itemInfo = {
+        star: star,
+        element: element,
+        weapon: weapon,
+        type: cType,
+        avatar: avatar
+      };
+
+      const payload = {
+        [category === "武器" ? "weapons" : "characters"]: {
+          [name]: itemInfo
+        }
+      };
+
+      if (charId) {
+        payload.idMap = {
+          [charId]: name
+        };
+      }
+
+      try {
+        const resp = await fetch("/api/config", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        const res = await resp.json();
+        if (res.success) {
+          showToast(`已成功保存【${name}】的配置与头像！`, "success");
+          await loadConfigData();
+          loadAnalysisData(); // 重新加载分析数据并实时刷新头像
+        } else {
+          showToast(res.message || "保存失败", "error");
+        }
+      } catch (e) {
+        showToast("保存异常: " + e.message, "error");
+      }
+    }
+
+    async function handleSaveCustomUrl(andSync = false) {
+      const url = document.getElementById("cfgCustomUrlInput").value.trim();
+      try {
+        const resp = await fetch("/api/config", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ customUrl: url })
+        });
+        const res = await resp.json();
+        if (res.success) {
+          showToast("抽卡链接已保存！", "success");
+          if (andSync) {
+            closeConfigModal();
+            triggerSync(url);
+          }
+        } else {
+          showToast(res.message || "保存失败", "error");
+        }
+      } catch (e) {
+        showToast("保存链接异常: " + e.message, "error");
+      }
+    }
+
+    async function handleClearCustomUrl() {
+      document.getElementById("cfgCustomUrlInput").value = "";
+      try {
+        const resp = await fetch("/api/config", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ customUrl: "" })
+        });
+        const res = await resp.json();
+        if (res.success) {
+          showToast("已清空自定义链接，将默认从游戏日志读取", "success");
+        }
+      } catch (e) {
+        showToast("操作失败: " + e.message, "error");
+      }
+    }
+
+    function renderAliasList() {
+      if (!configState.configData) return;
+      const container = document.getElementById("aliasListContainer");
+      const aliasMap = configState.configData.aliasMap || {};
+      const entries = Object.entries(aliasMap);
+
+      if (entries.length === 0) {
+        container.innerHTML = `<span class="text-xs text-slate-500 col-span-3 py-2">暂无自定义别名规则</span>`;
+        return;
+      }
+
+      container.innerHTML = entries.map(([key, val]) => `
+        <div class="bg-slate-900 border border-slate-800 rounded-lg p-2 text-xs flex items-center justify-between">
+          <div class="truncate">
+            <span class="text-slate-400 font-mono">${key}</span>
+            <span class="text-slate-500 mx-1">➔</span>
+            <span class="text-amber-300 font-semibold">${val}</span>
+          </div>
+        </div>
+      `).join("");
+    }
+
+    async function handleSaveAlias() {
+      const key = document.getElementById("inputAliasKey").value.trim();
+      const val = document.getElementById("inputAliasVal").value.trim();
+      if (!key || !val) {
+        showToast("请同时输入别名和目标名称！", "error");
+        return;
+      }
+
+      try {
+        const resp = await fetch("/api/config", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            aliasMap: { [key]: val }
+          })
+        });
+        const res = await resp.json();
+        if (res.success) {
+          showToast(`已添加映射: ${key} ➔ ${val}`, "success");
+          document.getElementById("inputAliasKey").value = "";
+          document.getElementById("inputAliasVal").value = "";
+          await loadConfigData();
+          loadAnalysisData();
+        } else {
+          showToast(res.message || "添加失败", "error");
+        }
+      } catch (e) {
+        showToast("添加别名异常: " + e.message, "error");
+      }
+    }
+
+    // 处理导入文件
+    async function handleFileImport(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      try {
+        const text = await file.text();
+        const json = JSON.parse(text);
+        const resp = await fetch("/api/import", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ data: json })
+        });
+        const res = await resp.json();
+        if (res.success) {
+          showToast(res.message, "success");
+          loadAnalysisData();
+        } else {
+          showToast(res.message, "error");
+        }
+      } catch (err) {
+        showToast("解析导入文件失败: " + err.message, "error");
+      }
+      e.target.value = "";
+    }
+
+    // 触发数据同步
+    async function triggerSync(urlStr = "") {
+      const btn = document.getElementById("btnSyncLog");
+      const originalText = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = `<span class="animate-spin mr-1">🔄</span> 正在同步...`;
+
+      try {
+        const resp = await fetch("/api/sync", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url: urlStr })
+        });
+        const res = await resp.json();
+        if (res.success) {
+          showToast(res.message, "success");
+          confetti({ particleCount: 80, spread: 60, origin: { y: 0.7 } });
+          loadAnalysisData(res.playerId);
+        } else {
+          showToast(res.message, "error");
+        }
+      } catch (e) {
+        showToast("同步请求失败: " + e.message, "error");
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+      }
+    }
+
+    // 加载整体分析数据
+    async function loadAnalysisData(playerId = null) {
+      try {
+        const url = playerId ? `/api/analysis?playerId=${playerId}` : `/api/analysis`;
+        const resp = await fetch(url);
+        const res = await resp.json();
+        if (res.success && res.data) {
+          state.analysisData = res.data;
+          renderHeaderStats();
+          renderSummaryGrid();
+          renderPoolOverview();
+          loadPoolRecords();
+        }
+      } catch (e) {
+        console.error("加载分析数据失败:", e);
+      }
+    }
+
+    // 渲染顶部分析与四大核心指标
+    function renderHeaderStats() {
+      const d = state.analysisData;
+      if (!d) return;
+
+      const select = document.getElementById("playerSelect");
+      if (d.players && d.players.length > 0) {
+        select.innerHTML = d.players.map(p => `
+          <option value="${p}" ${p === d.activePlayer ? 'selected' : ''}>${p}</option>
+        `).join("");
+      }
+
+      document.getElementById("rankTitle").innerText = d.rankTitle || "终极无敌至尊欧皇";
+      document.getElementById("statTotalPulls").innerText = (d.totalPullsAll || 0).toLocaleString();
+      document.getElementById("statAvgPity").innerText = d.globalAvgPity > 0 ? d.globalAvgPity : "0.0";
+
+      // 4大核心指标（完全对齐鸣潮工坊）
+      document.getElementById("statWinRate").innerText = (d.winRate !== undefined ? d.winRate : 33.3) + "%";
+      document.getElementById("statTotal5Star").innerText = d.total5StarAll || 13;
+      document.getElementById("statAvgChar").innerText = d.upCharAvgPity || "64.3";
+      document.getElementById("statAvgWeapon").innerText = d.upWeaponAvgPity || "29";
+
+      document.getElementById("countLimited5Star").innerText = d.limited5StarCount || 7;
+      document.getElementById("countStandard5Star").innerText = d.standard5StarCount || 6;
+    }
+
+    // 渲染顶栏五星图鉴网格（带重复次数徽章）
+    function renderSummaryGrid() {
+      const d = state.analysisData;
+      const grid = document.getElementById("summaryAvatarGrid");
+      if (!d || !d.summaryGrid || d.summaryGrid.length === 0) {
+        grid.innerHTML = `<span class="text-xs text-slate-500 py-1">暂无五星唤取记录</span>`;
+        return;
+      }
+
+      grid.innerHTML = d.summaryGrid.map(item => {
+        const badgeNum = item.category === "角色" ? (item.count > 1 ? item.count - 1 : '') : item.count;
+        return `
+          <div class="relative w-11 h-11 rounded-xl overflow-hidden bg-slate-900 border-2 ${
+            item.isStandard ? 'border-slate-600' : 'border-amber-400'
+          } shadow flex-shrink-0 group cursor-pointer" title="${item.name} (${item.count}次)">
+            <img src="${item.avatar}" alt="${item.name}" class="w-full h-full object-cover group-hover:scale-105 transition" onerror="this.src='https://fastly.jsdelivr.net/gh/ryanbenson/wuthering-waves-assets@master/images/Hiyuki.png'">
+            ${
+              badgeNum !== '' ? `
+                <div class="absolute top-0 right-0 bg-black/85 text-amber-300 font-mono font-black text-[10px] px-1 py-0.2 rounded-bl border-b border-l border-amber-500/40">
+                  ${badgeNum}
+                </div>
+              ` : ''
+            }
+            <div class="absolute bottom-0 inset-x-0 bg-black/75 text-[9px] text-center text-slate-200 truncate px-0.5 font-medium leading-tight">
+              ${item.name}
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    // 渲染当前卡池总览与出金瀑布流
+    function renderPoolOverview() {
+      const d = state.analysisData;
+      if (!d) return;
+
+      const pool = (d.pools && d.pools[state.currentPool]) ? d.pools[state.currentPool] : {
+        currentPity: 0,
+        maxPity: (state.currentPool === "5") ? 50 : 80,
+        remainingPity: (state.currentPool === "5") ? 50 : 80,
+        isGuaranteedNext: false,
+        avg5Star: 0,
+        avg4Star: 0,
+        fiveStarsCount: 0,
+        fourStarsCount: 0,
+        luckScore: 50,
+        luckTitle: "暂无数据",
+        fiveStars: []
+      };
+
+      // 水位进度
+      document.getElementById("currentPityNum").innerText = pool.currentPity;
+      document.getElementById("maxPityLabel").innerText = `/ ${pool.maxPity} 抽`;
+      document.getElementById("remainingPityNum").innerText = pool.remainingPity;
+      const pct = Math.min(100, Math.round((pool.currentPity / pool.maxPity) * 100));
+      document.getElementById("pityProgressBar").style.width = `${pct}%`;
+
+      // 保底状态标签
+      const tag = document.getElementById("pityStatusTag");
+      if (state.currentPool === "1") {
+        if (pool.isGuaranteedNext) {
+          tag.innerText = "大保底 100% UP";
+          tag.className = "text-[11px] px-2.5 py-0.5 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold";
+        } else {
+          tag.innerText = "小保底 50/50";
+          tag.className = "text-[11px] px-2.5 py-0.5 rounded-md bg-yellow-500/10 text-yellow-400 border border-yellow-500/30 font-medium";
+        }
+      } else if (state.currentPool === "2") {
+        tag.innerText = "100% 专武 (永不歪)";
+        tag.className = "text-[11px] px-2.5 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold";
+      } else {
+        tag.innerText = "常驻保底";
+        tag.className = "text-[11px] px-2.5 py-0.5 rounded-md bg-slate-800 text-slate-400 border border-slate-700";
+      }
+
+      // 出金统计
+      document.getElementById("avg5StarNum").innerText = pool.avg5Star > 0 ? pool.avg5Star : "0.0";
+      document.getElementById("avg4StarNum").innerText = pool.avg4Star > 0 ? pool.avg4Star : "0.0";
+
+      // 欧气评分
+      document.getElementById("luckScoreNum").innerText = pool.luckScore;
+      document.getElementById("luckScoreTitle").innerText = pool.luckTitle;
+
+      // 渲染五星出金条形瀑布流
+      renderLinearWaterfall(pool);
+
+      // 渲染图表
+      renderCharts(pool);
+    }
+
+    // 渲染条形出金流水（完全还原工坊经典进度条形式，直观、清晰）
+    function renderLinearWaterfall(pool) {
+      const container = document.getElementById("linearFlowContainer");
+      document.getElementById("fiveStarsBadge").innerText = `共 ${pool.fiveStars.length} 金`;
+
+      // 1. 顶部第一行固定为当前垫刀行
+      let html = `
+        <div class="flex items-center space-x-3 bg-slate-900/70 p-2.5 rounded-xl border border-emerald-500/30 shadow-sm">
+          <div class="w-10 h-10 rounded-lg bg-slate-800 border-2 border-emerald-500/60 flex items-center justify-center flex-shrink-0 shadow">
+            <span class="text-emerald-400 font-black text-lg">?</span>
+          </div>
+
+          <div class="flex-1 flex items-center min-w-0 pr-1">
+            <div class="h-7 rounded-lg bg-gradient-to-r from-emerald-500 to-green-600 flex items-center px-3 text-white font-black text-xs font-mono shadow transition-all duration-500" style="width: ${Math.max(20, Math.min(100, Math.round((pool.currentPity / pool.maxPity) * 100)))}%;">
+              <span>已垫 ${pool.currentPity} 抽</span>
+            </div>
+          </div>
+
+          <div class="w-7 flex-shrink-0 text-right text-[11px] text-slate-500 font-mono">
+            ${pool.currentPity}/${pool.maxPity}
+          </div>
+        </div>
+      `;
+
+      if (!pool.fiveStars || pool.fiveStars.length === 0) {
+        html += `
+          <div class="py-16 text-center text-slate-500 text-xs">
+            该卡池暂无五星出金历史记录
+          </div>
+        `;
+        container.innerHTML = html;
+        return;
+      }
+
+      // 2. 依次渲染每次出金行（由新到旧倒序）
+      html += pool.fiveStars.map(f => {
+        const isGold = f.pity >= 60;
+        const barBg = isGold 
+          ? "bg-gradient-to-r from-amber-400 via-amber-500 to-yellow-500 shadow-amber-500/20 text-slate-950 font-black"
+          : "bg-gradient-to-r from-emerald-400 to-green-600 shadow-emerald-500/20 text-white font-black";
+        
+        const widthPct = Math.max(14, Math.min(100, Math.round((f.pity / 80) * 100)));
+
+        return `
+          <div class="flex items-center space-x-3 hover:bg-slate-900/50 p-1.5 rounded-xl transition">
+            <div class="relative w-10 h-10 rounded-lg overflow-hidden bg-slate-950 border-2 ${
+              f.isLost5050 ? 'border-slate-600' : 'border-amber-400'
+            } flex items-center justify-center flex-shrink-0 shadow">
+              <img src="${f.avatar}" alt="${f.name}" class="w-full h-full object-cover" onerror="this.src='https://fastly.jsdelivr.net/gh/ryanbenson/wuthering-waves-assets@master/images/Hiyuki.png'">
+            </div>
+
+            <div class="flex-1 flex items-center min-w-0 pr-1">
+              <div class="h-7 rounded-lg ${barBg} flex items-center px-3 text-xs font-mono shadow transition-all duration-500" style="width: ${widthPct}%;">
+                <span>${f.pity} 抽</span>
+              </div>
+            </div>
+
+            <div class="w-7 flex justify-center items-center flex-shrink-0">
+              ${f.isLost5050 ? `<div class="stamp-wai" title="小保底歪常驻">歪</div>` : ''}
+            </div>
+          </div>
+        `;
+      }).join("");
+
+      container.innerHTML = html;
+    }
+
+    // 渲染 ECharts 图表
+    function renderCharts(pool) {
+      if (!distChart || !ratioChart) return;
+
+      const ranges = ["1-20 (极欧)", "21-50 (优良)", "51-65 (正常)", "66-80 (保底)"];
+      const counts = [0, 0, 0, 0];
+      (pool.fiveStars || []).forEach(f => {
+        if (f.pity <= 20) counts[0]++;
+        else if (f.pity <= 50) counts[1]++;
+        else if (f.pity <= 65) counts[2]++;
+        else counts[3]++;
+      });
+
+      distChart.setOption({
+        tooltip: { trigger: "axis" },
+        grid: { top: 15, right: 15, bottom: 20, left: 30 },
+        xAxis: {
+          type: "category",
+          data: ranges,
+          axisLine: { lineStyle: { color: "#334155" } },
+          axisLabel: { color: "#94a3b8", fontSize: 10 }
+        },
+        yAxis: {
+          type: "value",
+          splitLine: { lineStyle: { color: "#1e293b" } },
+          axisLabel: { color: "#94a3b8", fontSize: 10 }
+        },
+        series: [{
+          data: counts,
+          type: "bar",
+          barWidth: "40%",
+          itemStyle: {
+            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+              { offset: 0, color: "#facc15" },
+              { offset: 1, color: "#d97706" }
+            ]),
+            borderRadius: [4, 4, 0, 0]
+          }
+        }]
+      });
+
+      const total = pool.totalPulls || 1;
+      const count5 = pool.fiveStarsCount || 0;
+      const count4 = pool.fourStarsCount || 0;
+      const count3 = Math.max(0, total - count5 - count4);
+
+      ratioChart.setOption({
+        tooltip: { trigger: "item", formatter: "{b}: {c} 抽 ({d}%)" },
+        legend: { bottom: 0, itemWidth: 10, itemHeight: 10, textStyle: { color: "#94a3b8", fontSize: 10 } },
+        series: [{
+          name: "星级比例",
+          type: "pie",
+          radius: ["40%", "65%"],
+          center: ["50%", "45%"],
+          avoidLabelOverlap: false,
+          label: { show: false },
+          data: [
+            { value: count5, name: "5★ 黄金", itemStyle: { color: "#facc15" } },
+            { value: count4, name: "4★ 紫彩", itemStyle: { color: "#c084fc" } },
+            { value: count3, name: "3★ 蓝白", itemStyle: { color: "#38bdf8" } }
+          ]
+        }]
+      });
+
+      setTimeout(() => {
+        distChart.resize();
+        ratioChart.resize();
+      }, 50);
+    }
+
+    // 加载当前卡池全量明细列表
+    async function loadPoolRecords() {
+      const activePlayer = state.analysisData ? state.analysisData.activePlayer : null;
+      try {
+        const resp = await fetch(`/api/pool_records?poolType=${state.currentPool}&playerId=${activePlayer || ''}`);
+        const res = await resp.json();
+        if (res.success) {
+          state.poolRecords = res.records || [];
+          const countStr = `${state.poolRecords.length} 条`;
+          document.getElementById("logCountBadge").innerText = countStr;
+          document.getElementById("quickLogCount").innerText = state.poolRecords.length;
+          renderTable();
+        }
+      } catch (e) {
+        console.error("加载卡池流水失败:", e);
+      }
+    }
+
+    // 渲染卡池全量表格（带完整分页逻辑）
+    function renderTable() {
+      const tbody = document.getElementById("recordsTableBody");
+      const emptyNotice = document.getElementById("tableEmptyNotice");
+      let list = state.poolRecords || [];
+
+      // 星级筛选
+      if (state.currentStarFilter === "5") {
+        list = list.filter(r => r.qualityLevel === 5);
+      } else if (state.currentStarFilter === "45") {
+        list = list.filter(r => r.qualityLevel >= 4);
+      }
+
+      // 关键词搜索
+      if (state.searchQuery) {
+        list = list.filter(r => (r.name || "").toLowerCase().includes(state.searchQuery));
+      }
+
+      const totalRecords = list.length;
+      if (totalRecords === 0) {
+        tbody.innerHTML = "";
+        emptyNotice.classList.remove("hidden");
+        document.getElementById("pageInfoText").innerText = "第 0 / 0 页 (共 0 条)";
+        document.getElementById("btnFirstPage").disabled = true;
+        document.getElementById("btnPrevPage").disabled = true;
+        document.getElementById("btnNextPage").disabled = true;
+        document.getElementById("btnLastPage").disabled = true;
+        return;
+      }
+      emptyNotice.classList.add("hidden");
+
+      // 分页区间计算
+      const totalPages = Math.max(1, Math.ceil(totalRecords / state.recordsPerPage));
+      if (state.recordsPage > totalPages) state.recordsPage = totalPages;
+      if (state.recordsPage < 1) state.recordsPage = 1;
+
+      const startIndex = (state.recordsPage - 1) * state.recordsPerPage;
+      const endIndex = Math.min(startIndex + state.recordsPerPage, totalRecords);
+      const pageItems = list.slice(startIndex, endIndex);
+
+      // 渲染单页数据
+      tbody.innerHTML = pageItems.map((r, i) => {
+        const star = r.qualityLevel || 3;
+        let starBadge = `<span class="px-2 py-0.5 rounded text-[11px] bg-sky-500/10 text-sky-400 border border-sky-500/20 font-medium">3★</span>`;
+        if (star === 5) {
+          starBadge = `<span class="px-2 py-0.5 rounded text-[11px] bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold">5★</span>`;
+        } else if (star === 4) {
+          starBadge = `<span class="px-2 py-0.5 rounded text-[11px] bg-purple-500/20 text-purple-300 border border-purple-500/40 font-semibold">4★</span>`;
+        }
+
+        const globalIndex = totalRecords - (startIndex + i);
+
+        return `
+          <tr class="hover:bg-slate-800/50 transition">
+            <td class="py-2.5 px-4 text-slate-500 font-mono">${globalIndex}</td>
+            <td class="py-2.5 px-4 font-sans font-semibold text-white">${r.name}</td>
+            <td class="py-2.5 px-4">${starBadge}</td>
+            <td class="py-2.5 px-4 text-slate-400">${r.resourceType || (star >= 4 ? '角色' : '武器')}</td>
+            <td class="py-2.5 px-4 text-slate-400 font-mono">${r.time || ''}</td>
+          </tr>
+        `;
+      }).join("");
+
+      // 更新分页指示与按钮状态
+      document.getElementById("pageInfoText").innerText = `第 ${state.recordsPage} / ${totalPages} 页 (共 ${totalRecords} 条记录)`;
+      document.getElementById("btnFirstPage").disabled = (state.recordsPage === 1);
+      document.getElementById("btnPrevPage").disabled = (state.recordsPage === 1);
+      document.getElementById("btnNextPage").disabled = (state.recordsPage === totalPages);
+      document.getElementById("btnLastPage").disabled = (state.recordsPage === totalPages);
+    }
+  </script>
+</body>
+</html>
