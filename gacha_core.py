@@ -363,6 +363,7 @@ class GachaDataManager:
             five_stars = []
             four_stars = []
             current_pity = 0
+            accumulated_pity = 0
             current_4star_pity = 0
             
             # 用于记录上一个五星是否为常驻
@@ -370,6 +371,7 @@ class GachaDataManager:
             
             for item in sorted_records:
                 current_pity += 1
+                accumulated_pity += 1
                 current_4star_pity += 1
                 star = int(item.get("qualityLevel", 3))
                 raw_name = item.get("name", "")
@@ -380,12 +382,15 @@ class GachaDataManager:
                     is_standard = item_meta["isStandard"]
                     is_lost_5050 = False
                     is_guaranteed = False
+                    item_cumulative_pity = current_pity
                     
                     if p_type_int == 1: # 限定角色池
                         if is_standard:
                             is_lost_5050 = True
                             last_was_standard = True
                             total_5050_count += 1
+                            item_cumulative_pity = current_pity
+                            # 歪常驻不重置 accumulated_pity，抽数继续累加到下一个 UP
                         else:
                             is_guaranteed = last_was_standard
                             if not last_was_standard:
@@ -393,10 +398,15 @@ class GachaDataManager:
                                 total_5050_count += 1
                             last_was_standard = False
                             up_char_count += 1
+                            item_cumulative_pity = accumulated_pity
+                            accumulated_pity = 0 # 获得 UP 角色后重置累计花费抽数
                             
                     elif p_type_int == 2: # 限定武器池
                         if not is_standard:
                             up_weapon_count += 1
+                        accumulated_pity = 0
+                    else:
+                        accumulated_pity = 0
                             
                     f_info = {
                         "name": real_name,
@@ -409,6 +419,7 @@ class GachaDataManager:
                         "weapon": item_meta.get("weapon", ""),
                         "time": item.get("time", ""),
                         "pity": current_pity,
+                        "cumulativePity": item_cumulative_pity,
                         "isStandard": is_standard,
                         "isLost5050": is_lost_5050,
                         "isGuaranteed": is_guaranteed,
@@ -418,7 +429,7 @@ class GachaDataManager:
                     five_stars.append(f_info)
                     all_five_stars_list.append(f_info)
                     total_5star_all += 1
-                    current_pity = 0 # 重置水位
+                    current_pity = 0 # 重置单次出金水位
                     
                 elif star == 4:
                     four_stars.append({
@@ -433,11 +444,22 @@ class GachaDataManager:
                     total_4star_all += 1
                     current_4star_pity = 0
             
-            # 计算平均抽数
-            avg_5star = round(sum(f["pity"] for f in five_stars) / len(five_stars), 1) if five_stars else 0
-            avg_4star = round(sum(f["pity"] for f in four_stars) / len(four_stars), 1) if four_stars else 0
+            # 计算平均抽数：歪的不计入金，角色活动池只按获得的 UP 限定角色计算均抽与金数
+            if p_type_int == 1:
+                up_fives = [f for f in five_stars if f.get("isUp")]
+                lost_fives = [f for f in five_stars if f.get("isLost5050")]
+                effective_pulls = total_pulls - current_pity
+                avg_5star = round(effective_pulls / len(up_fives), 1) if up_fives else 0.0
+                pool_five_count = len(up_fives) # 歪的不计入金，只算 UP 金数
+                pool_lost_count = len(lost_fives)
+            else:
+                avg_5star = round(sum(f["pity"] for f in five_stars) / len(five_stars), 1) if five_stars else 0.0
+                pool_five_count = len(five_stars)
+                pool_lost_count = 0
+                
+            avg_4star = round(sum(f["pity"] for f in four_stars) / len(four_stars), 1) if four_stars else 0.0
             
-            # 计算欧气指数 (0-100)
+            # 计算单池欧气指数 (0-100)
             luck_score, luck_title = calculate_luck_score(five_stars, avg_5star, p_type_int)
             
             # 保底上限（常规为80，新手池为50）
@@ -454,7 +476,9 @@ class GachaDataManager:
                 "maxPity": max_pity,
                 "remainingPity": max(0, max_pity - current_pity),
                 "isGuaranteedNext": last_was_standard if p_type_int == 1 else False,
-                "fiveStarsCount": len(five_stars),
+                "fiveStarsCount": pool_five_count,
+                "lostCount": pool_lost_count,
+                "rawFiveStarsCount": len(five_stars),
                 "fourStarsCount": len(four_stars),
                 "avg5Star": avg_5star,
                 "avg4Star": avg_4star,
@@ -488,29 +512,42 @@ class GachaDataManager:
         # 小保底不歪率
         win_rate = round((win_5050_count / total_5050_count) * 100, 1) if total_5050_count > 0 else 50.0
         
-        # 全局平均出金
-        global_avg_pity = round(total_pulls_all / total_5star_all, 1) if total_5star_all > 0 else 0.0
-        
-        # 欧皇称号与标签
-        if global_avg_pity > 0 and global_avg_pity <= 45:
-            rank_title = "终极无敌至尊欧皇"
-            tags = ["天选之子", "欧皇附体", "运势极佳", "高频出金"]
-        elif global_avg_pity > 0 and global_avg_pity <= 58:
-            rank_title = "大吉大利·鸿运当头"
-            tags = ["运势亨通", "抽卡锦鲤", "心态超稳", "平稳出金"]
-        elif global_avg_pity > 58 and global_avg_pity <= 68:
-            rank_title = "平平淡淡·凡骨真仙"
-            tags = ["修仙得道", "不骄不躁", "理性抽卡", "常规保底"]
-        else:
-            rank_title = "逆风翻盘·大保底战士"
-            tags = ["越挫越勇", "底力深厚", "下次必出", "保底战神"]
-            
-        featured_avatar = summary_grid[0]["avatar"] if summary_grid else ""
-            
         # 计算每UP角色所需抽数 (限定角色池有效消耗抽数 / UP角色数量)
         up_char_avg_pity = round((result_pools.get("1", {}).get("totalPulls", 0) - result_pools.get("1", {}).get("currentPity", 0)) / up_char_count, 1) if up_char_count > 0 else 0.0
         # 计算每UP武器所需抽数 (限定武器池有效消耗抽数 / UP武器数量)
         up_weapon_avg_pity = round((result_pools.get("2", {}).get("totalPulls", 0) - result_pools.get("2", {}).get("currentPity", 0)) / up_weapon_count, 1) if up_weapon_count > 0 else 0.0
+
+        # 综合欧皇指数：只计算角色活动池抽取，且歪的不计入金
+        char_pool = result_pools.get("1", {})
+        char_pool_pulls = char_pool.get("totalPulls", 0)
+        char_up_count = char_pool.get("fiveStarsCount", 0)
+        char_avg_pity = char_pool.get("avg5Star", 0.0)
+        
+        if char_up_count > 0:
+            if char_avg_pity <= 55 and win_rate >= 50:
+                rank_title = "终极无敌至尊欧皇"
+                tags = ["天选之子", "一发入魂", "极速出金", "从未歪过"]
+            elif char_avg_pity <= 75:
+                rank_title = "大吉大利·欧气充沛"
+                tags = ["抽卡锦鲤", "运势亨通", "平稳出金", "极少歪卡"]
+            elif char_avg_pity <= 95:
+                rank_title = "平平淡淡·凡骨真仙"
+                tags = ["修仙得道", "理性抽卡", "概率正常", "常规保底"]
+            elif char_avg_pity <= 115:
+                rank_title = "稍显波折·常驻之友"
+                tags = ["常驻喜加一", "稍显坎坷", "越挫越勇", "蓄力待发"]
+            else:
+                rank_title = "逆风翻盘·大保底战士"
+                tags = ["保底战神", "硬核吃保底", "必出大保底", "底力深厚"]
+        else:
+            if char_pool_pulls > 0:
+                rank_title = "蓄力待发·等待首金"
+                tags = ["潜龙在渊", "厚积薄发", "静待花开", "下次必出"]
+            else:
+                rank_title = "暂无角色活动数据"
+                tags = ["暂未抽卡", "备战新池", "积攒星声", "蓄势待发"]
+            
+        featured_avatar = summary_grid[0]["avatar"] if summary_grid else ""
 
         return {
             "hasData": True,
@@ -523,11 +560,13 @@ class GachaDataManager:
             "totalAstrite": total_pulls_all * 160,
             "limited5StarCount": limited_5star_count,
             "standard5StarCount": standard_5star_count,
+            "charPoolPulls": char_pool_pulls,
+            "charPoolUpCount": char_up_count,
             "summaryGrid": summary_grid,
             "winRate": win_rate,
             "upCharAvgPity": up_char_avg_pity,
             "upWeaponAvgPity": up_weapon_avg_pity,
-            "globalAvgPity": global_avg_pity,
+            "globalAvgPity": char_avg_pity if char_up_count > 0 else 0.0,
             "rankTitle": rank_title,
             "tags": tags,
             "featuredAvatar": featured_avatar,
@@ -541,31 +580,48 @@ def calculate_luck_score(five_stars, avg_pity, pool_type):
     if not five_stars:
         return 50, "暂无出金数据"
         
-    # 基准分从50分开始
-    # 期望抽数约为 62 抽
-    base = 100 - (avg_pity / 80.0) * 80
-    
-    # 若限定池，考虑不歪率
     if pool_type == 1:
-        lost_count = sum(1 for f in five_stars if f["isLost5050"])
-        win_count = len(five_stars) - lost_count
-        ratio = win_count / len(five_stars) if five_stars else 0.5
-        base += (ratio - 0.5) * 40
+        # 限定角色池：歪的不计入金，基于每 UP 抽数 (数学期望 93 抽) 与小保底不歪率进行评定
+        up_fives = [f for f in five_stars if f.get("isUp")]
+        lost_fives = [f for f in five_stars if f.get("isLost5050")]
         
-    score = int(max(5, min(99, base)))
-    
-    if score >= 85:
-        title = "欧皇转世 (顶尖欧气)"
-    elif score >= 70:
-        title = "大吉大利 (欧气充沛)"
-    elif score >= 50:
-        title = "平平淡淡 (正常概率)"
-    elif score >= 35:
-        title = "稍显波折 (有点偏非)"
+        if not up_fives:
+            return 30, "未出UP角色"
+            
+        win_ratio = len(up_fives) / (len(up_fives) + len(lost_fives)) if (up_fives or lost_fives) else 0.5
+        
+        # 数学期望 93 抽/UP。若平均 60 抽对应 ~80 分，50 抽对应 ~90 分，120 抽对应 ~30 分
+        base = 100 - (avg_pity / 140.0) * 70
+        base += (win_ratio - 0.5) * 30
+        score = int(max(5, min(99, base)))
+        
+        if score >= 85:
+            title = "欧皇转世 (顶尖欧气)"
+        elif score >= 70:
+            title = "大吉大利 (欧气充沛)"
+        elif score >= 50:
+            title = "平平淡淡 (正常概率)"
+        elif score >= 35:
+            title = "稍显波折 (有点偏非)"
+        else:
+            title = "非酋体质 (大保底战士)"
+            
+        return score, title
     else:
-        title = "非酋体质 (大保底战士)"
-        
-    return score, title
+        # 其他卡池按常规 62 抽期望评估
+        base = 100 - (avg_pity / 80.0) * 80
+        score = int(max(5, min(99, base)))
+        if score >= 85:
+            title = "欧气爆棚"
+        elif score >= 70:
+            title = "运势良好"
+        elif score >= 50:
+            title = "正常概率"
+        elif score >= 35:
+            title = "偏非体质"
+        else:
+            title = "保底吃满"
+        return score, title
 
 def normalize_imported_records(raw_data, default_uid="802084356"):
     """

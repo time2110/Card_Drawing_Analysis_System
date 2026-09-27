@@ -179,12 +179,12 @@
         <!-- 右侧：欧皇评级与总计指标 -->
         <div class="flex items-center space-x-3 flex-shrink-0 border-t lg:border-t-0 lg:border-l border-slate-800 pl-0 lg:pl-4 pt-1.5 lg:pt-0">
           <div>
-            <div class="text-[10px] text-slate-400">综合欧皇指数</div>
+            <div class="text-[10px] text-slate-400">角色活动池 · 欧皇指数</div>
             <div id="rankTitle" class="text-lg sm:text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-300 to-yellow-500">
               终极无敌至尊欧皇
             </div>
             <div class="text-[11px] text-slate-300 font-mono mt-0.5">
-              总 <span id="statTotalPulls" class="text-amber-400 font-bold">493</span> 抽 | 均 <span id="statAvgPity" class="text-amber-400 font-bold">37.9</span> 抽/金
+              活动池 <span id="statCharPoolPulls" class="text-amber-400 font-bold">0</span> 抽 | 均 <span id="statAvgPity" class="text-amber-400 font-bold">0.0</span> 抽/UP金
             </div>
           </div>
           <div id="tagsContainer" class="hidden xl:flex flex-col space-y-1">
@@ -602,7 +602,7 @@
             <!-- 头像链接与实时预览 -->
             <div class="flex items-center space-x-3 pt-1">
               <div class="w-12 h-12 rounded-xl bg-slate-900 border border-slate-700 overflow-hidden flex-shrink-0 flex items-center justify-center p-0.5">
-                <img id="charAvatarPreview" src="https://fastly.jsdelivr.net/gh/ryanbenson/wuthering-waves-assets@master/images/Hiyuki.png" alt="头像预览" class="w-full h-full object-cover rounded-lg" onerror="this.src='https://api.iconify.design/lucide:user.svg';" />
+                <img id="charAvatarPreview" src="https://api.iconify.design/lucide:user.svg" alt="头像预览" class="w-full h-full object-contain p-1 rounded-lg" onerror="this.src='https://api.iconify.design/lucide:user.svg';" />
               </div>
               <div class="flex-1">
                 <label class="block text-[11px] text-slate-400 mb-1">头像图片链接 (支持任意图片 URL / 也可以为空)</label>
@@ -1110,7 +1110,7 @@
       const avatarInput = document.getElementById("inputCharAvatar");
       avatarInput.addEventListener("input", (e) => {
         const url = e.target.value.trim();
-        document.getElementById("charAvatarPreview").src = url || "https://fastly.jsdelivr.net/gh/ryanbenson/wuthering-waves-assets@master/images/Hiyuki.png";
+        document.getElementById("charAvatarPreview").src = url || "https://api.iconify.design/lucide:user.svg";
       });
 
       // 重置表单
@@ -1210,7 +1210,7 @@
       container.innerHTML = filtered.map(c => {
         const is5 = c.star === 5;
         const starColor = is5 ? "text-amber-400 border-amber-500/40 bg-amber-500/10" : "text-purple-300 border-purple-500/40 bg-purple-500/10";
-        const avatarSrc = c.avatar || "https://fastly.jsdelivr.net/gh/ryanbenson/wuthering-waves-assets@master/images/Hiyuki.png";
+        const avatarSrc = c.avatar || "https://api.iconify.design/lucide:user.svg";
         
         return `
           <div class="char-card-item bg-slate-900 hover:bg-slate-800/80 border border-slate-800 hover:border-amber-500/40 rounded-xl p-2 flex items-center space-x-2 transition cursor-pointer" onclick='populateCharForm(${JSON.stringify(c)})'>
@@ -1243,7 +1243,7 @@
       document.getElementById("selectCharType").value = charObj.type || "UP";
       document.getElementById("inputCharWeapon").value = charObj.weapon || "";
       document.getElementById("inputCharAvatar").value = charObj.avatar || "";
-      document.getElementById("charAvatarPreview").src = charObj.avatar || "https://fastly.jsdelivr.net/gh/ryanbenson/wuthering-waves-assets@master/images/Hiyuki.png";
+      document.getElementById("charAvatarPreview").src = charObj.avatar || "https://api.iconify.design/lucide:user.svg";
     }
 
     function resetCharForm() {
@@ -1256,7 +1256,7 @@
       document.getElementById("selectCharType").value = "UP";
       document.getElementById("inputCharWeapon").value = "";
       document.getElementById("inputCharAvatar").value = "";
-      document.getElementById("charAvatarPreview").src = "https://fastly.jsdelivr.net/gh/ryanbenson/wuthering-waves-assets@master/images/Hiyuki.png";
+      document.getElementById("charAvatarPreview").src = "https://api.iconify.design/lucide:user.svg";
     }
 
     async function handleSaveCharacter() {
@@ -1490,7 +1490,9 @@
       }
 
       document.getElementById("rankTitle").innerText = d.rankTitle || "终极无敌至尊欧皇";
-      document.getElementById("statTotalPulls").innerText = (d.totalPullsAll || 0).toLocaleString();
+      if (document.getElementById("statCharPoolPulls")) {
+        document.getElementById("statCharPoolPulls").innerText = (d.charPoolPulls || 0).toLocaleString();
+      }
       document.getElementById("statAvgPity").innerText = d.globalAvgPity > 0 ? d.globalAvgPity : "0.0";
 
       // 4大核心指标（完全对齐鸣潮工坊）
@@ -1518,7 +1520,7 @@
           <div class="relative w-11 h-11 rounded-xl overflow-hidden bg-slate-900 border-2 ${
             item.isStandard ? 'border-slate-600' : 'border-amber-400'
           } shadow flex-shrink-0 group cursor-pointer" title="${item.name} (${item.count}次)">
-            <img src="${item.avatar}" alt="${item.name}" class="w-full h-full object-cover group-hover:scale-105 transition" onerror="this.src='https://fastly.jsdelivr.net/gh/ryanbenson/wuthering-waves-assets@master/images/Hiyuki.png'">
+            <img src="${item.avatar || 'https://api.iconify.design/lucide:user.svg'}" alt="${item.name}" class="w-full h-full object-cover group-hover:scale-105 transition" onerror="this.src='https://api.iconify.design/lucide:user.svg'">
             ${
               badgeNum !== '' ? `
                 <div class="absolute top-0 right-0 bg-black/85 text-amber-300 font-mono font-black text-[10px] px-1 py-0.2 rounded-bl border-b border-l border-amber-500/40">
@@ -1596,7 +1598,12 @@
     // 渲染条形出金流水（完全还原工坊经典进度条形式，直观、清晰）
     function renderLinearWaterfall(pool) {
       const container = document.getElementById("linearFlowContainer");
-      document.getElementById("fiveStarsBadge").innerText = `共 ${pool.fiveStars.length} 金`;
+      if (state.currentPool === "1") {
+        const lostText = pool.lostCount ? ` (歪 ${pool.lostCount} 次)` : '';
+        document.getElementById("fiveStarsBadge").innerText = `共 ${pool.fiveStarsCount} 个UP金${lostText}`;
+      } else {
+        document.getElementById("fiveStarsBadge").innerText = `共 ${pool.fiveStarsCount} 金`;
+      }
 
       // 1. 顶部第一行固定为当前垫刀行
       let html = `
@@ -1606,8 +1613,8 @@
           </div>
 
           <div class="flex-1 flex items-center min-w-0 pr-1">
-            <div class="h-7 rounded-lg bg-gradient-to-r from-emerald-500 to-green-600 flex items-center px-3 text-white font-black text-xs font-mono shadow transition-all duration-500" style="width: ${Math.max(20, Math.min(100, Math.round((pool.currentPity / pool.maxPity) * 100)))}%;">
-              <span>已垫 ${pool.currentPity} 抽</span>
+            <div class="h-7 rounded-lg bg-gradient-to-r from-emerald-500 to-green-600 flex items-center px-3 text-white font-black text-xs font-mono shadow transition-all duration-500 min-w-fit" style="width: ${Math.max(20, Math.min(100, Math.round((pool.currentPity / pool.maxPity) * 100)))}%;">
+              <span class="whitespace-nowrap">已垫 ${pool.currentPity} 抽</span>
             </div>
           </div>
 
@@ -1629,24 +1636,38 @@
 
       // 2. 依次渲染每次出金行（由新到旧倒序）
       html += pool.fiveStars.map(f => {
-        const isGold = f.pity >= 60;
-        const barBg = isGold 
-          ? "bg-gradient-to-r from-amber-400 via-amber-500 to-yellow-500 shadow-amber-500/20 text-slate-950 font-black"
-          : "bg-gradient-to-r from-emerald-400 to-green-600 shadow-emerald-500/20 text-white font-black";
+        let barBg;
+        let labelText;
+
+        if (f.isLost5050) {
+          barBg = "bg-gradient-to-r from-slate-600 via-slate-700 to-slate-800 text-slate-300 font-bold border border-slate-600/30";
+          labelText = `${f.pity} 抽 (小保底歪)`;
+        } else {
+          const isGold = f.pity >= 60;
+          barBg = isGold 
+            ? "bg-gradient-to-r from-amber-400 via-amber-500 to-yellow-500 shadow-amber-500/20 text-slate-950 font-black"
+            : "bg-gradient-to-r from-emerald-400 to-green-600 shadow-emerald-500/20 text-white font-black";
+          
+          if (f.cumulativePity && f.cumulativePity > f.pity) {
+            labelText = `${f.pity} 抽 (大保底累计 ${f.cumulativePity} 抽)`;
+          } else {
+            labelText = `${f.pity} 抽 (小保底直接出)`;
+          }
+        }
         
         const widthPct = Math.max(14, Math.min(100, Math.round((f.pity / 80) * 100)));
 
         return `
           <div class="flex items-center space-x-3 hover:bg-slate-900/50 p-1.5 rounded-xl transition">
             <div class="relative w-10 h-10 rounded-lg overflow-hidden bg-slate-950 border-2 ${
-              f.isLost5050 ? 'border-slate-600' : 'border-amber-400'
+              f.isLost5050 ? 'border-slate-600 opacity-75' : 'border-amber-400'
             } flex items-center justify-center flex-shrink-0 shadow">
-              <img src="${f.avatar}" alt="${f.name}" class="w-full h-full object-cover" onerror="this.src='https://fastly.jsdelivr.net/gh/ryanbenson/wuthering-waves-assets@master/images/Hiyuki.png'">
+              <img src="${f.avatar || 'https://api.iconify.design/lucide:user.svg'}" alt="${f.name}" class="w-full h-full object-cover" onerror="this.src='https://api.iconify.design/lucide:user.svg'">
             </div>
 
             <div class="flex-1 flex items-center min-w-0 pr-1">
-              <div class="h-7 rounded-lg ${barBg} flex items-center px-3 text-xs font-mono shadow transition-all duration-500" style="width: ${widthPct}%;">
-                <span>${f.pity} 抽</span>
+              <div class="h-7 rounded-lg ${barBg} flex items-center px-3 text-xs font-mono shadow transition-all duration-500 min-w-fit" style="width: ${widthPct}%;">
+                <span class="whitespace-nowrap">${labelText}</span>
               </div>
             </div>
 

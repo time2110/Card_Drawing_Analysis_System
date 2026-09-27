@@ -13,30 +13,57 @@ WEAPON_BASE = "https://fastly.jsdelivr.net/gh/ryanbenson/wuthering-waves-assets@
 
 # 资源 ID 映射表（官方内部 ID 到标准显示名称）
 ID_MAP = {
+    # 角色 (基于官方日志实际 resourceId 修正与补齐)
+    1102: "散华",
+    1103: "白芷",
+    1106: "釉瑚",
     1108: "绯雪",
-    1404: "长离",
-    1406: "椿",
-    1302: "忌炎",
+    1203: "安可",
+    1204: "莫特斐",
     1205: "吟霖",
     1206: "折枝",
-    1305: "相里要",
-    1505: "守岸人",
-    1503: "维里奈",
-    1405: "鉴心",
     1301: "卡卡罗",
-    1402: "安可",
-    1204: "凌阳",
-    1102: "散华",
-    1501: "白芷",
-    1601: "丹瑾",
-    1401: "炽霞",
-    1307: "秧秧",
-    1403: "莫特斐",
+    1302: "忌炎",
     1303: "渊武",
-    1602: "桃祈",
-    1106: "釉瑚",
-    1207: "灯灯",
+    1305: "相里要",
+    1307: "卜灵",
+    1401: "炽霞",
+    1402: "秧秧",
+    1403: "秋水",
+    1404: "长离",
+    1405: "鉴心",
+    1406: "椿",
+    1411: "仇远",
+    1501: "白芷",
+    1503: "维里奈",
+    1504: "灯灯",
+    1505: "守岸人",
+    1601: "桃祈",
+    1602: "丹瑾",
+    # 五星武器
     21020086: "霜天灼刃",
+    # 四星武器 (基于用户日志实际抽到 ID 补齐)
+    21020044: "不归孤军",
+    21010044: "永夜长明",
+    21010064: "东落",
+    21050024: "奇幻变奏",
+    21050064: "异度",
+    21040044: "袍泽之固",
+    21050044: "今州守望",
+    21020024: "行进序曲",
+    21020064: "西升",
+    21010024: "异响空灵",
+    21030064: "飞逝",
+    21020084: "永续坍缩",
+    21040064: "骇行",
+    21030044: "无眠烈火",
+    21040084: "尘云旋臂",
+    21040024: "呼啸重音",
+    21010084: "凋亡频移",
+    21030024: "华彩乐段",
+    21050084: "核熔星盘",
+    21030084: "悖论喷流",
+    21020015: "千古汧流",
 }
 
 # 别名/内部代号映射
@@ -44,9 +71,56 @@ ALIAS_MAP = {
     "绯雪": "绯雪",
     "緋雪": "绯雪",
     "Hiyuki": "绯雪",
+    "仇远": "仇远",
+    "Qiuyuan": "仇远",
+    "Qiu Yuan": "仇远",
+    "卜灵": "卜灵",
+    "Buling": "卜灵",
+    "Bu Ling": "卜灵",
+    "菲比": "菲比",
+    "Phoebe": "菲比",
+    "布兰特": "布兰特",
+    "Brant": "布兰特",
+    "坎特蕾拉": "坎特蕾拉",
+    "Cantarella": "坎特蕾拉",
+    "赞妮": "赞妮",
+    "Zani": "赞妮",
+    "弗洛洛": "弗洛洛",
+    "Phrolova": "弗洛洛",
+    "奥古斯塔": "奥古斯塔",
+    "Augusta": "奥古斯塔",
+    "尤诺": "尤诺",
+    "Iuno": "尤诺",
+    "Yuno": "尤诺",
+    "嘉贝莉娜": "嘉贝莉娜",
+    "Galbrena": "嘉贝莉娜",
+    "清宵": "清宵",
+    "Qingxiao": "清宵",
+    "景燃": "景燃",
+    "Jingran": "景燃",
+    "达妮娅": "达妮娅",
+    "Denia": "达妮娅",
+    "Dania": "达妮娅",
+    "莫宁": "莫宁",
+    "Mornye": "莫宁",
+    "Morning": "莫宁",
     "霜天灼刃": "霜天灼刃",
     "霜天银刃": "霜天灼刃",
     "Frostburn": "霜天灼刃",
+    "裁竹": "裁竹",
+    "Emerald Sentence": "裁竹",
+    "EmeraldSentence": "裁竹",
+    "死与舞": "死与舞",
+    "The Last Dance": "死与舞",
+    "TheLastDance": "死与舞",
+    "悲喜剧": "悲喜剧",
+    "Tragicomedy": "悲喜剧",
+    "千古汧流": "千古汧流",
+    "千古洐流": "千古汧流",
+    "Emerald of Genesis": "千古汧流",
+    "EmeraldOfGenesis": "千古汧流",
+    "核熔星盘": "核熔星盘",
+    "悖论喷流": "悖论喷流",
 }
 
 # 属性定义与色彩
@@ -71,8 +145,9 @@ STANDARD_FIVE_STARS = {
 # 角色资料表
 CHARACTERS = {
     # 5星限定角色
+    "仇远": {"star": 5, "element": "气动", "weapon": "迅刀", "type": "UP", "avatar": IMG_BASE + "Qiuyuan.png"},
     "绯雪": {"star": 5, "element": "冷凝", "weapon": "迅刀", "type": "UP", "avatar": IMG_BASE + "Hiyuki.png"},
-    "今汐": {"star": 5, "element": "衍射", "weapon": "大剑", "type": "UP", "avatar": IMG_BASE + "Jinhsi.png"},
+    "今汐": {"star": 5, "element": "衍射", "weapon": "重刃", "type": "UP", "avatar": IMG_BASE + "Jinhsi.png"},
     "长离": {"star": 5, "element": "热熔", "weapon": "迅刀", "type": "UP", "avatar": IMG_BASE + "Changli.png"},
     "椿": {"star": 5, "element": "湮灭", "weapon": "迅刀", "type": "UP", "avatar": IMG_BASE + "Camellya.png"},
     "忌炎": {"star": 5, "element": "气动", "weapon": "重刃", "type": "UP", "avatar": IMG_BASE + "Jiyan.png"},
@@ -82,6 +157,18 @@ CHARACTERS = {
     "守岸人": {"star": 5, "element": "衍射", "weapon": "音感仪", "type": "UP", "avatar": IMG_BASE + "Shorekeeper.png"},
     "珂莱塔": {"star": 5, "element": "冷凝", "weapon": "佩枪", "type": "UP", "avatar": IMG_BASE + "Carlotta.png"},
     "洛可可": {"star": 5, "element": "湮灭", "weapon": "臂铠", "type": "UP", "avatar": IMG_BASE + "Roccia.png"},
+    "菲比": {"star": 5, "element": "衍射", "weapon": "音感仪", "type": "UP", "avatar": IMG_BASE + "Phoebe.png"},
+    "布兰特": {"star": 5, "element": "热熔", "weapon": "迅刀", "type": "UP", "avatar": IMG_BASE + "Brant.png"},
+    "坎特蕾拉": {"star": 5, "element": "湮灭", "weapon": "音感仪", "type": "UP", "avatar": IMG_BASE + "Cantarella.png"},
+    "赞妮": {"star": 5, "element": "衍射", "weapon": "臂铠", "type": "UP", "avatar": IMG_BASE + "Zani.png"},
+    "弗洛洛": {"star": 5, "element": "湮灭", "weapon": "音感仪", "type": "UP", "avatar": IMG_BASE + "Phrolova.png"},
+    "奥古斯塔": {"star": 5, "element": "导电", "weapon": "重刃", "type": "UP", "avatar": IMG_BASE + "Augusta.png"},
+    "尤诺": {"star": 5, "element": "气动", "weapon": "臂铠", "type": "UP", "avatar": IMG_BASE + "Iuno.png"},
+    "嘉贝莉娜": {"star": 5, "element": "热熔", "weapon": "佩枪", "type": "UP", "avatar": IMG_BASE + "Galbrena.png"},
+    "清宵": {"star": 5, "element": "气动", "weapon": "迅刀", "type": "UP", "avatar": IMG_BASE + "Qingxiao.png"},
+    "景燃": {"star": 5, "element": "热熔", "weapon": "重刃", "type": "UP", "avatar": IMG_BASE + "Jingran.png"},
+    "达妮娅": {"star": 5, "element": "热熔", "weapon": "音感仪", "type": "UP", "avatar": IMG_BASE + "Denia.png"},
+    "莫宁": {"star": 5, "element": "热熔", "weapon": "重刃", "type": "UP", "avatar": IMG_BASE + "Mornye.png"},
 
     # 5星常驻角色
     "维里奈": {"star": 5, "element": "衍射", "weapon": "音感仪", "type": "常驻", "avatar": IMG_BASE + "Verina.png"},
@@ -92,6 +179,7 @@ CHARACTERS = {
     "漂泊者": {"star": 5, "element": "衍射", "weapon": "迅刀", "type": "主角", "avatar": IMG_BASE + "RoverFemale.png"},
 
     # 4星角色
+    "卜灵": {"star": 4, "element": "导电", "weapon": "音感仪", "type": "4星", "avatar": IMG_BASE + "Buling.png"},
     "散华": {"star": 4, "element": "冷凝", "weapon": "迅刀", "type": "4星", "avatar": IMG_BASE + "Sanhua.png"},
     "白芷": {"star": 4, "element": "冷凝", "weapon": "音感仪", "type": "4星", "avatar": IMG_BASE + "Baizhi.png"},
     "丹瑾": {"star": 4, "element": "湮灭", "weapon": "迅刀", "type": "4星", "avatar": IMG_BASE + "Danjin.png"},
@@ -108,13 +196,16 @@ CHARACTERS = {
 # 五星武器表
 WEAPONS_5STAR = {
     # 限定五星武器
+    "死与舞": {"star": 5, "weapon": "佩枪", "type": "UP", "avatar": WEAPON_BASE + "TheLastDance.png"},
+    "悲喜剧": {"star": 5, "weapon": "臂铠", "type": "UP", "avatar": WEAPON_BASE + "Tragicomedy.png"},
+    "裁竹": {"star": 5, "weapon": "迅刀", "type": "UP", "avatar": WEAPON_BASE + "EmeraldSentence.png"},
     "霜天灼刃": {"star": 5, "weapon": "迅刀", "type": "UP", "avatar": WEAPON_BASE + "Frostburn.png"},
     "苍鳞千嶂": {"star": 5, "weapon": "重刃", "type": "UP", "avatar": WEAPON_BASE + "VerdantSummit.png"},
     "掣傀之手": {"star": 5, "weapon": "音感仪", "type": "UP", "avatar": WEAPON_BASE + "Stringmaster.png"},
     "时斯如梭": {"star": 5, "weapon": "重刃", "type": "UP", "avatar": WEAPON_BASE + "AgesOfHarvest.png"},
     "赫奕流明": {"star": 5, "weapon": "迅刀", "type": "UP", "avatar": WEAPON_BASE + "BlazingBrilliance.png"},
     "琼枝冰绡": {"star": 5, "weapon": "音感仪", "type": "UP", "avatar": WEAPON_BASE + "RimeDrapedSprouts.png"},
-    "诸方玄枢": {"star": 5, "weapon": "臂铠", "type": "UP", "avatar": WEAPON_BASE + "VeritysFall.png"},
+    "诸方玄枢": {"star": 5, "weapon": "臂铠", "type": "UP", "avatar": WEAPON_BASE + "VeritysHandle.png"},
     "序奇微芒": {"star": 5, "weapon": "音感仪", "type": "UP", "avatar": WEAPON_BASE + "StellarSymphony.png"},
     "裁春": {"star": 5, "weapon": "迅刀", "type": "UP", "avatar": WEAPON_BASE + "RedSpring.png"},
     
@@ -123,7 +214,36 @@ WEAPONS_5STAR = {
     "停驻之烟": {"star": 5, "weapon": "佩枪", "type": "常驻", "avatar": WEAPON_BASE + "StaticMist.png"},
     "擎渊怒涛": {"star": 5, "weapon": "臂铠", "type": "常驻", "avatar": WEAPON_BASE + "AbyssSurges.png"},
     "漪澜浮录": {"star": 5, "weapon": "音感仪", "type": "常驻", "avatar": WEAPON_BASE + "CosmicRipples.png"},
-    "千古洐流": {"star": 5, "weapon": "迅刀", "type": "常驻", "avatar": WEAPON_BASE + "EmeraldOfGenesis.png"},
+    "千古汧流": {"star": 5, "weapon": "迅刀", "type": "常驻", "avatar": WEAPON_BASE + "EmeraldOfGenesis.png"},
+}
+
+# 四星武器表
+WEAPONS_4STAR = {
+    "不归孤军": {"weapon": "重刃", "avatar": WEAPON_BASE + "DauntlessEvernight.png"},
+    "永夜长明": {"weapon": "迅刀", "avatar": WEAPON_BASE + "CommandoOfConviction.png"},
+    "东落": {"weapon": "重刃", "avatar": WEAPON_BASE + "WaningRedshift.png"},
+    "奇幻变奏": {"weapon": "音感仪", "avatar": WEAPON_BASE + "Variation.png"},
+    "异度": {"weapon": "佩枪", "avatar": WEAPON_BASE + "Novaburst.png"},
+    "袍泽之固": {"weapon": "重刃", "avatar": WEAPON_BASE + "AmityAccord.png"},
+    "今州守望": {"weapon": "音感仪", "avatar": WEAPON_BASE + "JinzhouKeeper.png"},
+    "行进序曲": {"weapon": "迅刀", "avatar": WEAPON_BASE + "Overture.png"},
+    "西升": {"weapon": "迅刀", "avatar": WEAPON_BASE + "LunarCutter.png"},
+    "异响空灵": {"weapon": "佩枪", "avatar": WEAPON_BASE + "Cadenza.png"},
+    "飞逝": {"weapon": "佩枪", "avatar": WEAPON_BASE + "Thunderbolt.png"},
+    "永续坍缩": {"weapon": "重刃", "avatar": WEAPON_BASE + "EndlessCollapse.png"},
+    "骇行": {"weapon": "臂铠", "avatar": WEAPON_BASE + "Marcato.png"},
+    "无眠烈火": {"weapon": "佩枪", "avatar": WEAPON_BASE + "UndyingFlame.png"},
+    "尘云旋臂": {"weapon": "臂铠", "avatar": WEAPON_BASE + "CelestialSpiral.png"},
+    "呼啸重音": {"weapon": "臂铠", "avatar": WEAPON_BASE + "HollowMirage.png"},
+    "凋亡频移": {"weapon": "佩枪", "avatar": WEAPON_BASE + "RelativisticJet.png"},
+    "华彩乐段": {"weapon": "音感仪", "avatar": WEAPON_BASE + "Augment.png"},
+    "核熔星盘": {"weapon": "音感仪", "avatar": WEAPON_BASE + "FusionAccretion.png"},
+    "悖论喷流": {"weapon": "佩枪", "avatar": WEAPON_BASE + "RelativisticJet.png"},
+    "秋罡": {"weapon": "重刃", "avatar": WEAPON_BASE + "Autumntrace.png"},
+    "飞景": {"weapon": "迅刀", "avatar": WEAPON_BASE + "Lumingloss.png"},
+    "金掌": {"weapon": "臂铠", "avatar": WEAPON_BASE + "Stonard.png"},
+    "清音": {"weapon": "音感仪", "avatar": WEAPON_BASE + "Augment.png"},
+    "奔雷": {"weapon": "佩枪", "avatar": WEAPON_BASE + "SolarFlame.png"},
 }
 
 def get_item_info(name, quality_level=None, resource_type=None, resource_id=None):
@@ -134,7 +254,7 @@ def get_item_info(name, quality_level=None, resource_type=None, resource_id=None
     orig_name = (name or "").strip()
     
     # 如果原始名称已经是已知角色/武器，直接使用
-    if orig_name in CHARACTERS or orig_name in WEAPONS_5STAR or orig_name in ALIAS_MAP:
+    if orig_name in CHARACTERS or orig_name in WEAPONS_5STAR or orig_name in WEAPONS_4STAR or orig_name in ALIAS_MAP:
         name = ALIAS_MAP.get(orig_name, orig_name)
     elif resource_id:
         try:
@@ -175,6 +295,21 @@ def get_item_info(name, quality_level=None, resource_type=None, resource_id=None
             "weapon": w["weapon"],
             "isUp": w["type"] == "UP",
             "isStandard": w["type"] == "常驻",
+            "avatar": w.get("avatar", "")
+        }
+
+    if name in WEAPONS_4STAR:
+        w = WEAPONS_4STAR[name]
+        return {
+            "name": name,
+            "category": "武器",
+            "star": 4,
+            "element": "武器",
+            "elementColor": "#c084fc",
+            "elementBg": "rgba(192, 132, 252, 0.15)",
+            "weapon": w["weapon"],
+            "isUp": False,
+            "isStandard": True,
             "avatar": w.get("avatar", "")
         }
     
