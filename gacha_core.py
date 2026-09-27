@@ -80,7 +80,7 @@ def extract_latest_gacha_url(log_file_path):
     if not log_file_path:
         return None, "日志路径未指定"
     
-    target_file = log_file_path.strip().strip('"').strip("'")
+    target_file = os.path.normpath(log_file_path.strip().strip('"').strip("'"))
     if not os.path.exists(target_file):
         return None, f"未找到指定的文件或目录: {target_file}"
 
@@ -173,6 +173,7 @@ def query_official_records(api_info, pool_type):
         method="POST"
     )
     
+    import ssl
     try:
         with urllib.request.urlopen(req, timeout=12) as response:
             res_data = json.loads(response.read().decode("utf-8"))
@@ -184,6 +185,23 @@ def query_official_records(api_info, pool_type):
             return [], f"接口返回错误 (Code {code}): {msg}"
     except urllib.error.HTTPError as e:
         return [], f"HTTP请求错误: {e.code} - {e.reason}"
+    except urllib.error.URLError as e:
+        # 兼容处理：用户开启网络加速器(如UU/雷神)或系统代理时，自签名证书可能触发 CERTIFICATE_VERIFY_FAILED，自动回退放行
+        if "CERTIFICATE_VERIFY_FAILED" in str(e):
+            try:
+                unverified_ctx = ssl.create_default_context()
+                unverified_ctx.check_hostname = False
+                unverified_ctx.verify_mode = ssl.CERT_NONE
+                with urllib.request.urlopen(req, timeout=12, context=unverified_ctx) as response:
+                    res_data = json.loads(response.read().decode("utf-8"))
+                    code = res_data.get("code")
+                    msg = res_data.get("message", "")
+                    if code == 0 or code == 200 or msg == "成功":
+                        return res_data.get("data", []) or [], None
+                    return [], f"接口返回错误 (Code {code}): {msg}"
+            except Exception as retry_err:
+                return [], f"网络连接失败 (代理/证书异常): {str(retry_err)}"
+        return [], f"网络连接失败: {str(e)}"
     except Exception as e:
         return [], f"网络连接失败: {str(e)}"
 
