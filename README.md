@@ -54,6 +54,13 @@
 
 ## 🚀 快速开始
 
+### 0. 环境准备 (Prerequisites)
+* **Python 环境**：需要安装 **Python 3.8 及以上版本**（推荐 Python 3.10 ~ 3.12）。
+  * 官方下载地址：[Python 官方下载](https://www.python.org/downloads/)（或直接在 Windows 微软应用商店搜索 Python 安装）。
+  * ⚠️ **重要安装提醒**：在 Windows 安装 Python 时，**务必在安装界面勾选底部的 `Add python.exe to PATH`**（将 Python 添加到系统环境变量），否则双击脚本或命令行可能会提示无法识别 `python` 命令。
+* **零依赖说明**：
+  * 本项目完全基于 Python 标准库开发，**无需运行任何 `pip install` 命令**，环境安装完毕即可直接开箱运行！
+
 ### 方式 A：Windows 一键启动（推荐）
 1. 下载或克隆本项目仓库到本地。
 2. 双击项目根目录下的 **`启动鸣潮抽卡分析.bat`**。

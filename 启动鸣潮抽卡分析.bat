@@ -5,8 +5,13 @@ cd /d "%~dp0"
 
 where python >nul 2>nul
 if errorlevel 1 (
+    echo ===================================================
     echo [错误] 系统中未检测到 Python 环境！
-    echo 请先安装 Python 3.8+ 后再运行本程序。
+    echo ===================================================
+    echo 运行本工具需要安装 Python 3.8 或更高版本。
+    echo 1. 请前往官网下载安装: https://www.python.org/downloads/
+    echo 2. 安装时请务必勾选底部的 [Add python.exe to PATH]
+    echo ---------------------------------------------------
     pause
     exit /b 1
 )
