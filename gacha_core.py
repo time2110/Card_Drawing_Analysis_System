@@ -62,7 +62,7 @@ def decrypt_log_bytes(raw_bytes):
     return result.decode('utf-8', errors='ignore')
 
 def extract_gacha_url_from_bytes(raw):
-    """从字节流中提取抽卡 URL（自动兼容明文与异或解密）"""
+    """从字节流中提取抽卡 URL（自动兼容明文与异或解密，并容错处理 Unicode/HTML 转义）"""
     url_pattern = re.compile(r'https?://[^\s"\'<>]*aki-gm-resources[^\s"\'<>]*')
     text = raw.decode('utf-8', errors='ignore')
     matches = url_pattern.findall(text)
@@ -70,7 +70,10 @@ def extract_gacha_url_from_bytes(raw):
         text = decrypt_log_bytes(raw)
         matches = url_pattern.findall(text)
     if matches:
-        return matches[-1], None
+        raw_url = matches[-1]
+        # 容错处理：虚幻引擎日志或转义文本中可能出现的 \u0026 及 &amp; 统一转为 &
+        raw_url = raw_url.replace(r"\u0026", "&").replace("&amp;", "&")
+        return raw_url, None
     return None, "日志中未找到抽卡链接。请先在游戏内打开一次【唤取记录】页面后再试。"
 
 def extract_latest_gacha_url(log_file_path):
@@ -110,7 +113,7 @@ def parse_gacha_url(url_str):
     """
     解析唤取 URL，提取关键鉴权参数及 API 请求地址
     """
-    url_str = url_str.strip()
+    url_str = url_str.strip().replace(r"\u0026", "&").replace("&amp;", "&")
     # 处理 hash 路由中的查询参数
     query_str = ""
     if "?" in url_str:

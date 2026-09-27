@@ -57,7 +57,7 @@ echo ========================================
 echo Latest aki-gm-resources URL
 echo ========================================
 
-powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "$p=$env:OUT; $lines=[IO.File]::ReadAllLines($p,[Text.Encoding]::UTF8); $url=$null; for($i=$lines.Length-1;$i -ge 0;$i--){ if($lines[$i] -match 'https?://[^\s\x22\x27\x3c\x3e]*aki-gm-resources[^\s\x22\x27\x3c\x3e]*'){ $url=$Matches[0]; break } }; if($url){ Write-Host $url; Set-Clipboard -Value $url; Write-Host '(URL has been copied to clipboard)' } else { Write-Host 'No URL containing aki-gm-resources was found.' }"
+powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "$p=$env:OUT; $lines=[IO.File]::ReadAllLines($p,[Text.Encoding]::UTF8); $url=$null; for($i=$lines.Length-1;$i -ge 0;$i--){ if($lines[$i] -match 'https?://[^\s\x22\x27\x3c\x3e]*aki-gm-resources[^\s\x22\x27\x3c\x3e]*'){ $url=$Matches[0].Replace('\u0026','&').Replace('&amp;','&'); break } }; if($url){ Write-Host $url; Set-Clipboard -Value $url; Write-Host '(URL has been copied to clipboard)' } else { Write-Host 'No URL containing aki-gm-resources was found.' }"
 
 echo.
 echo Done.
