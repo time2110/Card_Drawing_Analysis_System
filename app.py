@@ -11,7 +11,14 @@ import time
 import socket
 import urllib.parse
 import webbrowser
-from http.server import HTTPServer, BaseHTTPRequestHandler
+try:
+    from http.server import ThreadingHTTPServer as ServerClass
+except ImportError:
+    from socketserver import ThreadingMixIn
+    from http.server import HTTPServer
+    class ServerClass(ThreadingMixIn, HTTPServer):
+        daemon_threads = True
+from http.server import BaseHTTPRequestHandler
 import threading
 import base64
 
@@ -434,7 +441,7 @@ def start_server(port=None):
         port = find_available_port(8765)
         
     server_address = ("127.0.0.1", port)
-    httpd = HTTPServer(server_address, GachaRequestHandler)
+    httpd = ServerClass(server_address, GachaRequestHandler)
     url = f"http://127.0.0.1:{port}"
     
     print("=" * 60)
@@ -443,9 +450,17 @@ def start_server(port=None):
     print(f"   游戏日志路径: {LOG_PATH}")
     print("=" * 60)
     
-    # 延迟1秒在默认浏览器打开
+    # 探测本地端口连通性，确保 HTTP 服务就绪后再唤起默认浏览器
     def open_browser():
-        time.sleep(1)
+        start_time = time.time()
+        while time.time() - start_time < 5.0:
+            try:
+                with socket.create_connection(("127.0.0.1", port), timeout=0.2):
+                    break
+            except (OSError, ConnectionRefusedError):
+                time.sleep(0.1)
+        # 短暂缓冲确保服务主循环就绪
+        time.sleep(0.15)
         webbrowser.open(url)
         
     threading.Thread(target=open_browser, daemon=True).start()
