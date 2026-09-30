@@ -63,6 +63,18 @@ from genshin_core import (
     parse_genshin_url_params
 )
 
+from datetime import datetime
+from webdav_backup import (
+    load_webdav_config,
+    save_webdav_config,
+    sanitize_config_for_frontend,
+    test_webdav_connection,
+    upload_backup_to_webdav,
+    restore_backup_from_webdav,
+    build_full_backup_payload,
+    restore_from_payload
+)
+
 DATA_PATH = os.path.join(BASE_DIR, "data", "gacha_records.json")
 KNOWN_GAME_LOG = r"C:\software\Wuthering Waves\Wuthering Waves Game\Client\Saved\Logs\Client.log"
 LOG_PATH = KNOWN_GAME_LOG if os.path.exists(KNOWN_GAME_LOG) else os.path.join(PARENT_DIR, "Client.log")
@@ -151,6 +163,15 @@ def run_auto_sync_all():
         # 2. 原神后台同步
         g_ok, g_msg, g_added = sync_genshin_background()
         latest_auto_sync_status["genshin"] = {"success": g_ok, "added": g_added, "message": g_msg}
+
+        # 3. 若有新增记录且开启了坚果云自动备份，自动静默同步至云端
+        if (w_added > 0 or g_added > 0):
+            try:
+                wcfg = load_webdav_config()
+                if wcfg.get("enabled") and wcfg.get("autoBackupOnSync") and wcfg.get("username") and wcfg.get("password"):
+                    upload_backup_to_webdav(wcfg)
+            except Exception:
+                pass
     finally:
         latest_auto_sync_status["running"] = False
         auto_sync_lock.release()
@@ -247,7 +268,18 @@ class GachaRequestHandler(BaseHTTPRequestHandler):
             })
             return
 
-        # API: 导出数据
+        # API: 全量导出备份 (包含鸣潮、原神、自定义立绘配置及坚果云配置)
+        if path in ("/api/backup/export", "/api/export_full"):
+            payload = build_full_backup_payload()
+            now_slug = datetime.now().strftime("%Y%m%d_%H%M%S")
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Content-Disposition", f'attachment; filename="gacha_full_backup_{now_slug}.json"')
+            self.end_headers()
+            self.wfile.write(json.dumps(payload, ensure_ascii=False, indent=2).encode("utf-8"))
+            return
+
+        # API: 导出数据 (鸣潮独立格式)
         if path == "/api/export":
             self.send_response(200)
             self.send_header("Content-Type", "application/json; charset=utf-8")
@@ -345,6 +377,15 @@ class GachaRequestHandler(BaseHTTPRequestHandler):
             self.send_json(200, {
                 "success": True,
                 "status": latest_auto_sync_status
+            })
+            return
+
+        # API: 获取坚果云 / WebDAV 配置状态
+        if path == "/api/webdav/config":
+            cfg = load_webdav_config()
+            self.send_json(200, {
+                "success": True,
+                "config": sanitize_config_for_frontend(cfg)
             })
             return
 
@@ -587,11 +628,34 @@ class GachaRequestHandler(BaseHTTPRequestHandler):
             })
             return
 
-            # API: 导入数据 (全面兼容原生备份、UIGF 3.0标准、鸣潮工坊、Astrionyx等格式)
+            # API: 全量恢复备份 (支持鸣潮、原神、自定义图鉴配置及坚果云配置)
+        if path == "/api/backup/restore":
+            content = req_data.get("data") if req_data.get("data") is not None else (req_data.get("jsonContent") or req_data)
+            ok, msg, detail = restore_from_payload(content)
+            self.send_json(200 if ok else 400, {
+                "success": ok,
+                "message": msg,
+                "detail": detail,
+                "analysis": db_manager.get_analysis_for_player()
+            })
+            return
+
+        # API: 导入数据 (全面兼容全量备份、原生备份、UIGF 3.0标准、鸣潮工坊等格式)
         if path == "/api/import":
             import_data = req_data.get("data")
             if not import_data:
                 self.send_json(400, {"success": False, "message": "导入的数据内容为空"})
+                return
+
+            # 若为包含坚果云配置或双端记录的全量备份包，直接走全量恢复
+            if isinstance(import_data, dict) and ("wuwa" in import_data or "genshin" in import_data or "webdavConfig" in import_data):
+                ok, msg, detail = restore_from_payload(import_data)
+                self.send_json(200 if ok else 400, {
+                    "success": ok,
+                    "message": msg,
+                    "detail": detail,
+                    "analysis": db_manager.get_analysis_for_player()
+                })
                 return
 
             normalized_players = normalize_imported_records(import_data)
@@ -780,7 +844,7 @@ class GachaRequestHandler(BaseHTTPRequestHandler):
             })
             return
 
-        # 原神: 导入标准 UIGF JSON
+        # 原神: 导入标准 UIGF JSON (全面兼容全量备份)
         if path == "/api/genshin/import":
             raw_text = req_data.get("jsonContent", "")
             try:
@@ -788,6 +852,18 @@ class GachaRequestHandler(BaseHTTPRequestHandler):
             except Exception as e:
                 self.send_json(400, {"success": False, "message": f"JSON 解析失败: {e}"})
                 return
+
+            # 若为包含坚果云配置或双端记录的全量备份包，直接走全量恢复
+            if isinstance(uigf_obj, dict) and ("wuwa" in uigf_obj or "genshin" in uigf_obj or "webdavConfig" in uigf_obj):
+                ok, msg, detail = restore_from_payload(uigf_obj)
+                self.send_json(200 if ok else 400, {
+                    "success": ok,
+                    "message": msg,
+                    "detail": detail,
+                    "analysis": genshin_db_manager.get_analysis_for_player()
+                })
+                return
+
             ok, msg, count = genshin_db_manager.import_uigf(uigf_obj)
             if ok:
                 self.send_json(200, {
@@ -825,6 +901,77 @@ class GachaRequestHandler(BaseHTTPRequestHandler):
                 self.send_json(500, {
                     "success": False,
                     "message": f"保存原神配置失败: {str(e)}"
+                })
+            return
+
+        # 坚果云: 保存 WebDAV 配置
+        if path == "/api/webdav/config":
+            try:
+                old_cfg = load_webdav_config()
+                new_cfg = dict(req_data)
+                if not new_cfg.get("password") and old_cfg.get("password"):
+                    new_cfg["password"] = old_cfg["password"]
+                saved = save_webdav_config(new_cfg)
+                self.send_json(200, {
+                    "success": True,
+                    "message": "坚果云 / WebDAV 配置已保存！",
+                    "config": sanitize_config_for_frontend(saved)
+                })
+            except Exception as e:
+                self.send_json(500, {
+                    "success": False,
+                    "message": f"保存 WebDAV 配置失败: {str(e)}"
+                })
+            return
+
+        # 坚果云: 测试 WebDAV 连通性
+        if path == "/api/webdav/test":
+            try:
+                target_cfg = dict(req_data)
+                old_cfg = load_webdav_config()
+                if not target_cfg.get("password") and old_cfg.get("password"):
+                    target_cfg["password"] = old_cfg["password"]
+                ok, msg = test_webdav_connection(target_cfg)
+                self.send_json(200 if ok else 400, {
+                    "success": ok,
+                    "message": msg
+                })
+            except Exception as e:
+                self.send_json(500, {
+                    "success": False,
+                    "message": f"测试连接异常: {str(e)}"
+                })
+            return
+
+        # 坚果云: 立即上传备份
+        if path == "/api/webdav/backup":
+            try:
+                ok, msg, detail = upload_backup_to_webdav()
+                self.send_json(200 if ok else 400, {
+                    "success": ok,
+                    "message": msg,
+                    "detail": detail
+                })
+            except Exception as e:
+                self.send_json(500, {
+                    "success": False,
+                    "message": f"备份异常: {str(e)}"
+                })
+            return
+
+        # 坚果云: 从云端拉取恢复
+        if path == "/api/webdav/restore":
+            try:
+                ok, msg, detail = restore_backup_from_webdav()
+                self.send_json(200 if ok else 400, {
+                    "success": ok,
+                    "message": msg,
+                    "detail": detail
+                })
+            except Exception as e:
+                self.send_json(500, {
+                    "success": False,
+                    "message": f"恢复异常: {str(e)}"
                 })
             return
 

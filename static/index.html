@@ -134,13 +134,19 @@
           <span>⚙️ 配置</span>
         </button>
 
+        <button id="btnOpenWebdav" class="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-sky-950/80 hover:bg-sky-900/90 text-sky-300 hover:text-sky-200 border border-sky-500/40 text-xs font-semibold transition shadow-sm active:scale-95 cursor-pointer" title="坚果云 / WebDAV 云端数据备份与恢复">
+          <span>☁️ 坚果云备份</span>
+        </button>
+
         <div class="h-4 w-px bg-slate-800 hidden sm:block"></div>
 
-        <button id="btnExport" title="导出备份 JSON" class="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white border border-slate-700 transition hidden sm:flex cursor-pointer">
+        <button id="btnExport" title="导出全量备份 JSON (包含鸣潮、原神抽卡记录、角色配置与坚果云配置)" class="flex items-center space-x-1 px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs border border-slate-700 transition cursor-pointer">
           <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+          <span class="hidden md:inline">导出备份</span>
         </button>
-        <button id="btnImportTrigger" title="导入备份 JSON" class="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white border border-slate-700 transition hidden sm:flex cursor-pointer">
+        <button id="btnImportTrigger" title="恢复备份 JSON (一键恢复鸣潮、原神及坚果云配置)" class="flex items-center space-x-1 px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-300 hover:text-amber-200 border border-amber-500/30 text-xs font-semibold transition cursor-pointer">
           <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+          <span>恢复备份</span>
         </button>
         <input type="file" id="fileInput" accept=".json" class="hidden">
       </div>
@@ -715,6 +721,133 @@
     </div>
   </div>
 
+  <!-- 坚果云 / WebDAV 备份模态框 (参考 taskList 体验设计) -->
+  <div id="webdavModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4 hidden">
+    <div class="bg-slate-900 border border-slate-700/80 rounded-2xl max-w-lg w-full p-5 space-y-4 shadow-2xl flex flex-col max-h-[92vh]">
+      
+      <!-- 弹窗标题 -->
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3 flex-shrink-0">
+        <div class="flex items-center space-x-2.5">
+          <div class="w-8 h-8 rounded-xl bg-sky-500/20 border border-sky-500/40 flex items-center justify-center text-sky-400 text-lg">
+            ☁️
+          </div>
+          <div>
+            <h3 class="text-sm font-bold text-white flex items-center space-x-2">
+              <span>坚果云 / WebDAV 云端备份</span>
+              <span id="webdavSyncStatusCapsule" class="text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700 font-mono">未连接</span>
+            </h3>
+            <p class="text-[11px] text-slate-400">将鸣潮与原神的抽卡记录安全备份至个人网盘，支持跨设备一键恢复</p>
+          </div>
+        </div>
+        <button id="btnCloseWebdavModal" class="text-slate-400 hover:text-white text-2xl p-1 leading-none cursor-pointer">&times;</button>
+      </div>
+
+      <!-- 弹窗表单区 (可滚动) -->
+      <div class="flex-1 overflow-y-auto thin-scroll space-y-3.5 pr-1 text-xs">
+        
+        <!-- 提供商选择 -->
+        <div>
+          <label class="block text-[11px] font-semibold text-slate-400 mb-1.5">云端服务商</label>
+          <div class="grid grid-cols-2 gap-2">
+            <button id="providerJianguoyun" type="button" class="px-3 py-2 rounded-xl border border-sky-500/60 bg-sky-500/15 text-sky-300 font-bold flex items-center justify-center space-x-1.5 transition cursor-pointer">
+              <span>🥜</span>
+              <span>坚果云 (官方推荐)</span>
+            </button>
+            <button id="providerCustom" type="button" class="px-3 py-2 rounded-xl border border-slate-700 bg-slate-800/60 text-slate-400 hover:text-white font-medium flex items-center justify-center space-x-1.5 transition cursor-pointer">
+              <span>🌐</span>
+              <span>自定义 WebDAV</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 服务器地址 -->
+        <div>
+          <label class="block text-[11px] text-slate-400 mb-1">WebDAV 服务器地址</label>
+          <input id="inputWebdavUrl" type="text" value="https://dav.jianguoyun.com/dav/" placeholder="https://dav.jianguoyun.com/dav/" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-sky-500 font-mono" />
+        </div>
+
+        <!-- 账号与密码 -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          <div>
+            <label class="block text-[11px] text-slate-400 mb-1">坚果云账号 (通常为登录邮箱)</label>
+            <input id="inputWebdavUser" type="text" placeholder="your_email@example.com" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-sky-500 font-mono" />
+          </div>
+
+          <div>
+            <div class="flex items-center justify-between mb-1">
+              <label class="text-[11px] text-slate-400">应用密码 (非登录密码)</label>
+              <button id="btnToggleWebdavPwd" type="button" class="text-[10px] text-sky-400 hover:underline cursor-pointer">显示/隐藏</button>
+            </div>
+            <input id="inputWebdavPwd" type="password" placeholder="填写坚果云专属应用密码" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-sky-500 font-mono" />
+          </div>
+        </div>
+
+        <!-- 坚果云应用密码创建指引贴士 (参考 taskList) -->
+        <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-2.5 space-y-1 text-[11px] text-slate-400">
+          <div class="flex items-center space-x-1.5 text-sky-400 font-bold">
+            <span>💡</span>
+            <span>如何获取坚果云应用密码？</span>
+          </div>
+          <p class="leading-relaxed">
+            登录坚果云网页版 ➔ 点击右上角头像【账户信息】 ➔ 点击【安全选项】 ➔ 在“第三方应用管理”中点击【添加应用密码】，生成专属密码粘贴至上方即可。
+          </p>
+        </div>
+
+        <!-- 远端存放文件夹 -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          <div>
+            <label class="block text-[11px] text-slate-400 mb-1">远端云盘文件夹名</label>
+            <input id="inputWebdavFolder" type="text" value="GachaTracker" placeholder="GachaTracker" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-amber-300 focus:outline-none focus:border-sky-500 font-mono" />
+          </div>
+
+          <!-- 自动同步设置 -->
+          <div class="flex flex-col justify-end space-y-1.5">
+            <label class="flex items-center space-x-2 text-slate-300 cursor-pointer">
+              <input id="chkWebdavEnabled" type="checkbox" class="w-3.5 h-3.5 accent-sky-500 rounded">
+              <span class="text-xs font-semibold">启用坚果云同步</span>
+            </label>
+            <label class="flex items-center space-x-2 text-slate-400 cursor-pointer">
+              <input id="chkWebdavAutoSync" type="checkbox" checked class="w-3.5 h-3.5 accent-sky-500 rounded">
+              <span class="text-[11px]">抽卡同步完成后自动备份到云端</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- 备份状态与时间看板 -->
+        <div class="bg-slate-950/60 border border-slate-800/80 rounded-xl p-3 flex items-center justify-between">
+          <div class="space-y-0.5">
+            <div class="text-[11px] text-slate-400">最近一次云端备份：</div>
+            <div id="webdavLastTimeText" class="font-mono text-xs text-sky-300 font-bold">暂无备份记录</div>
+          </div>
+          <div id="webdavLastStatusText" class="text-xs text-slate-500 font-mono">--</div>
+        </div>
+
+      </div>
+
+      <!-- 底部控制按钮组 -->
+      <div class="border-t border-slate-800 pt-3 flex flex-wrap items-center justify-between gap-2 flex-shrink-0">
+        <div class="flex items-center space-x-2">
+          <button id="btnWebdavTest" type="button" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition flex items-center space-x-1 cursor-pointer">
+            <span>🔍 测试连接</span>
+          </button>
+          <button id="btnWebdavSave" type="button" class="px-3.5 py-1.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold transition shadow shadow-sky-500/20 cursor-pointer">
+            <span>💾 保存设置</span>
+          </button>
+        </div>
+
+        <div class="flex items-center space-x-2">
+          <button id="btnWebdavRestore" type="button" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 hover:text-amber-200 border border-amber-500/30 text-xs font-semibold transition cursor-pointer" title="从坚果云拉取远端历史数据并增量合并">
+            <span>⬇️ 从云端恢复</span>
+          </button>
+          <button id="btnWebdavBackup" type="button" class="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white text-xs font-bold transition shadow shadow-sky-500/30 active:scale-95 cursor-pointer">
+            <span>⬆️ 立即上传备份</span>
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
   <!-- Toast 提示 -->
   <div id="toast" class="fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 transition-all duration-300 max-w-md px-4 py-3 rounded-2xl shadow-2xl flex items-center space-x-2 text-xs font-semibold"></div>
 
@@ -1025,9 +1158,9 @@
         loadAnalysisData(e.target.value);
       });
 
-      // 导出数据
+      // 导出全量备份数据（含鸣潮、原神、图鉴配置与坚果云配置）
       document.getElementById("btnExport").addEventListener("click", () => {
-        window.open(getApiUrl("/export"), "_blank");
+        window.open("/api/backup/export", "_blank");
       });
 
       // 导入数据
@@ -1088,6 +1221,262 @@
 
       // 初始化日志路径选择与同步弹窗事件
       initSyncLogEvents();
+
+      // 初始化坚果云 / WebDAV 备份事件
+      initWebdavEvents();
+    }
+
+    // ================= 坚果云 / WebDAV 云端备份逻辑 =================
+    const webdavState = {
+      config: null
+    };
+
+    function initWebdavEvents() {
+      const modal = document.getElementById("webdavModal");
+      const btnOpen = document.getElementById("btnOpenWebdav");
+      const btnClose = document.getElementById("btnCloseWebdavModal");
+      const btnTogglePwd = document.getElementById("btnToggleWebdavPwd");
+      const providerJg = document.getElementById("providerJianguoyun");
+      const providerCu = document.getElementById("providerCustom");
+      const btnTest = document.getElementById("btnWebdavTest");
+      const btnSave = document.getElementById("btnWebdavSave");
+      const btnBackup = document.getElementById("btnWebdavBackup");
+      const btnRestore = document.getElementById("btnWebdavRestore");
+
+      if (btnOpen) btnOpen.addEventListener("click", openWebdavModal);
+      if (btnClose) btnClose.addEventListener("click", closeWebdavModal);
+
+      // 点击背景遮罩关闭
+      if (modal) {
+        modal.addEventListener("click", (e) => {
+          if (e.target === modal) closeWebdavModal();
+        });
+      }
+
+      // 密码显示/隐藏
+      if (btnTogglePwd) {
+        btnTogglePwd.addEventListener("click", () => {
+          const pwdInput = document.getElementById("inputWebdavPwd");
+          if (pwdInput.type === "password") {
+            pwdInput.type = "text";
+            btnTogglePwd.innerText = "隐藏";
+          } else {
+            pwdInput.type = "password";
+            btnTogglePwd.innerText = "显示";
+          }
+        });
+      }
+
+      // 服务商切换
+      if (providerJg) {
+        providerJg.addEventListener("click", () => {
+          providerJg.className = "px-3 py-2 rounded-xl border border-sky-500/60 bg-sky-500/15 text-sky-300 font-bold flex items-center justify-center space-x-1.5 transition cursor-pointer";
+          if (providerCu) {
+            providerCu.className = "px-3 py-2 rounded-xl border border-slate-700 bg-slate-800/60 text-slate-400 hover:text-white font-medium flex items-center justify-center space-x-1.5 transition cursor-pointer";
+          }
+          document.getElementById("inputWebdavUrl").value = "https://dav.jianguoyun.com/dav/";
+        });
+      }
+      if (providerCu) {
+        providerCu.addEventListener("click", () => {
+          providerCu.className = "px-3 py-2 rounded-xl border border-sky-500/60 bg-sky-500/15 text-sky-300 font-bold flex items-center justify-center space-x-1.5 transition cursor-pointer";
+          if (providerJg) {
+            providerJg.className = "px-3 py-2 rounded-xl border border-slate-700 bg-slate-800/60 text-slate-400 hover:text-white font-medium flex items-center justify-center space-x-1.5 transition cursor-pointer";
+          }
+        });
+      }
+
+      if (btnTest) btnTest.addEventListener("click", handleWebdavTest);
+      if (btnSave) btnSave.addEventListener("click", handleWebdavSave);
+      if (btnBackup) btnBackup.addEventListener("click", handleWebdavBackup);
+      if (btnRestore) btnRestore.addEventListener("click", handleWebdavRestore);
+    }
+
+    async function openWebdavModal() {
+      document.getElementById("webdavModal").classList.remove("hidden");
+      await loadWebdavConfig();
+    }
+
+    function closeWebdavModal() {
+      document.getElementById("webdavModal").classList.add("hidden");
+    }
+
+    async function loadWebdavConfig() {
+      try {
+        const resp = await fetch("/api/webdav/config");
+        const res = await resp.json();
+        if (res.success && res.config) {
+          webdavState.config = res.config;
+          const c = res.config;
+          document.getElementById("inputWebdavUrl").value = c.server_url || "https://dav.jianguoyun.com/dav/";
+          document.getElementById("inputWebdavUser").value = c.username || "";
+          if (c.has_password) {
+            document.getElementById("inputWebdavPwd").placeholder = "•••••••••••• (已配置)";
+            document.getElementById("inputWebdavPwd").value = "";
+          } else {
+            document.getElementById("inputWebdavPwd").placeholder = "填写坚果云专属应用密码";
+            document.getElementById("inputWebdavPwd").value = "";
+          }
+          document.getElementById("inputWebdavFolder").value = c.remote_dir || "GachaTracker";
+          document.getElementById("chkWebdavEnabled").checked = !!c.enabled;
+          document.getElementById("chkWebdavAutoSync").checked = c.auto_sync !== false;
+          
+          const lastTimeEl = document.getElementById("webdavLastTimeText");
+          const lastStatusEl = document.getElementById("webdavLastStatusText");
+          const statusCap = document.getElementById("webdavSyncStatusCapsule");
+
+          if (c.last_backup_time) {
+            lastTimeEl.innerText = c.last_backup_time;
+            lastStatusEl.innerText = c.last_backup_status || "正常";
+            lastStatusEl.className = "text-xs font-mono text-emerald-400";
+          } else {
+            lastTimeEl.innerText = "暂无备份记录";
+            lastStatusEl.innerText = "--";
+            lastStatusEl.className = "text-xs font-mono text-slate-500";
+          }
+
+          if (c.enabled && c.username && c.has_password) {
+            statusCap.innerText = "已就绪";
+            statusCap.className = "text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-mono";
+          } else {
+            statusCap.innerText = "未连接";
+            statusCap.className = "text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700 font-mono";
+          }
+        }
+      } catch (e) {
+        console.error("加载 WebDAV 配置失败:", e);
+      }
+    }
+
+    async function handleWebdavTest() {
+      const btn = document.getElementById("btnWebdavTest");
+      const orig = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = `<span class="animate-spin mr-1">🔄</span> 测试中...`;
+
+      const payload = {
+        server_url: document.getElementById("inputWebdavUrl").value.trim(),
+        username: document.getElementById("inputWebdavUser").value.trim(),
+        password: document.getElementById("inputWebdavPwd").value,
+        remote_dir: document.getElementById("inputWebdavFolder").value.trim()
+      };
+
+      try {
+        const resp = await fetch("/api/webdav/test", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        const res = await resp.json();
+        if (res.success) {
+          showToast("坚果云 WebDAV 连接成功！文件夹就绪", "success");
+          const statusCap = document.getElementById("webdavSyncStatusCapsule");
+          statusCap.innerText = "连接正常";
+          statusCap.className = "text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-mono";
+        } else {
+          showToast("连接失败: " + (res.message || "请检查账号或应用密码"), "error");
+        }
+      } catch (e) {
+        showToast("请求失败: " + e.message, "error");
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = orig;
+      }
+    }
+
+    async function handleWebdavSave() {
+      const btn = document.getElementById("btnWebdavSave");
+      const orig = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = `<span class="animate-spin mr-1">💾</span> 保存中...`;
+
+      const payload = {
+        server_url: document.getElementById("inputWebdavUrl").value.trim(),
+        username: document.getElementById("inputWebdavUser").value.trim(),
+        password: document.getElementById("inputWebdavPwd").value,
+        remote_dir: document.getElementById("inputWebdavFolder").value.trim(),
+        enabled: document.getElementById("chkWebdavEnabled").checked,
+        auto_sync: document.getElementById("chkWebdavAutoSync").checked
+      };
+
+      try {
+        const resp = await fetch("/api/webdav/config", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        const res = await resp.json();
+        if (res.success) {
+          showToast("坚果云 WebDAV 配置已成功保存！", "success");
+          await loadWebdavConfig();
+        } else {
+          showToast("保存失败: " + (res.message || "未知原因"), "error");
+        }
+      } catch (e) {
+        showToast("保存配置异常: " + e.message, "error");
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = orig;
+      }
+    }
+
+    async function handleWebdavBackup() {
+      const btn = document.getElementById("btnWebdavBackup");
+      const orig = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = `<span class="animate-spin mr-1">⬆️</span> 上传中...`;
+
+      try {
+        const resp = await fetch("/api/webdav/backup", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" }
+        });
+        const res = await resp.json();
+        if (res.success) {
+          showToast(`备份成功！${res.message || ''}`, "success");
+          confetti({ particleCount: 70, spread: 60, origin: { y: 0.7 } });
+          await loadWebdavConfig();
+        } else {
+          showToast("备份失败: " + (res.message || "未知错误"), "error");
+        }
+      } catch (e) {
+        showToast("上传备份失败: " + e.message, "error");
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = orig;
+      }
+    }
+
+    async function handleWebdavRestore() {
+      if (!confirm("确定要从云端拉取备份并增量合并到本地吗？\n（系统将采用只增不减原则合并鸣潮与原神历史记录，绝不会丢失本地已有数据）")) {
+        return;
+      }
+
+      const btn = document.getElementById("btnWebdavRestore");
+      const orig = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = `<span class="animate-spin mr-1">⬇️</span> 恢复中...`;
+
+      try {
+        const resp = await fetch("/api/webdav/restore", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" }
+        });
+        const res = await resp.json();
+        if (res.success) {
+          showToast(`云端恢复完成！${res.message || ''}`, "success");
+          confetti({ particleCount: 90, spread: 70, origin: { y: 0.7 } });
+          loadAnalysisData();
+          await loadWebdavConfig();
+        } else {
+          showToast("云端恢复失败: " + (res.message || "请检查云端是否有备份文件"), "error");
+        }
+      } catch (e) {
+        showToast("云端恢复异常: " + e.message, "error");
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = orig;
+      }
     }
 
     // ================= 日志路径选择与同步逻辑 =================
@@ -1631,28 +2020,47 @@
       }
     }
 
-    // 处理导入文件
+    // 处理导入与恢复备份文件 (支持全量备份，包含鸣潮、原神、图鉴配置与坚果云配置)
     async function handleFileImport(e) {
       const file = e.target.files[0];
       if (!file) return;
       try {
         const text = await file.text();
         const json = JSON.parse(text);
-        const payload = state.currentGame === "genshin" ? { jsonContent: json } : { data: json };
-        const resp = await fetch(getApiUrl("/import"), {
+
+        // 优先调用全量恢复接口 (支持恢复坚果云配置与双端记录)
+        const resp = await fetch("/api/backup/restore", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload)
+          body: JSON.stringify({ data: json })
         });
         const res = await resp.json();
         if (res.success) {
           showToast(res.message, "success");
+          confetti({ particleCount: 80, spread: 60, origin: { y: 0.7 } });
           loadAnalysisData();
+          // 若恢复了坚果云配置，同步刷新坚果云配置状态
+          if (res.detail && res.detail.webdavRestored) {
+            await loadWebdavConfig();
+          }
         } else {
-          showToast(res.message, "error");
+          // 降级兼容单端旧格式
+          const payload = state.currentGame === "genshin" ? { jsonContent: json } : { data: json };
+          const fResp = await fetch(getApiUrl("/import"), {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+          });
+          const fRes = await fResp.json();
+          if (fRes.success) {
+            showToast(fRes.message, "success");
+            loadAnalysisData();
+          } else {
+            showToast(fRes.message || res.message, "error");
+          }
         }
       } catch (err) {
-        showToast("解析导入文件失败: " + err.message, "error");
+        showToast("解析导入/恢复文件失败: " + err.message, "error");
       }
       e.target.value = "";
     }
