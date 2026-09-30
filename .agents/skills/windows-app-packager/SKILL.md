@@ -75,11 +75,62 @@ description: >-
   `--add-data="static;static"`
 * **多阶图标生成**：应用图标 `.ico` 必须包含 16x16, 32x32, 48x48, 64x64, 128x128, 256x256 多尺寸，保证桌面、任务栏及高分屏下均清晰无锯齿。
 
+### 5. Windows Sockets TIME_WAIT 与本地端口安全探测 (防冷启动 ERR_CONNECTION_REFUSED)
+* **根因**：
+  - 进程重启或快速关开时，Windows 内核网络栈会将本地 TCP 端口置于 `TIME_WAIT` 状态（持续 30~60 秒）。
+  - 若使用 `connect_ex` 探测端口，由于无进程监听，会返回非零从而误判为“端口空闲”。
+  - 随后若在 Windows 下使用 `SO_REUSEADDR` 强行绑定该端口，**Windows 内核将丢弃所有进入的新 TCP 连接并回复 TCP RST，前端浏览器直接崩溃报 ERR_CONNECTION_REFUSED（无法访问此页面）**；关掉等 30 秒后再打开才恢复。
+* **铁律**：
+  1. **必须使用真实物理 bind 探测**（严禁仅用 `connect_ex`）：
+     ```python
+     def find_available_port(start_port=8765, max_attempts=20):
+         for port in range(start_port, start_port + max_attempts):
+             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+             try:
+                 s.bind(('127.0.0.1', port))
+                 s.close()
+                 return port
+             except OSError:
+                 try:
+                     s.close()
+                 except Exception:
+                     pass
+                 continue
+         return start_port
+     ```
+  2. **在 Windows 下显式禁用 SO_REUSEADDR**：
+     `ServerClass.allow_reuse_address = False`，绝不强行借用脏端口。
+
+### 6. Chromium / Edge 独立视窗生命周期与多进程托管 (防早退误杀服务器)
+* **根因**：
+  - Windows 11 下 Edge 是多进程应用。执行 `msedge.exe --app=...` 时，若后台已有 Edge 驻留，启动器进程会在 1 秒内将 URL 委托给主进程并退出（返回 0）。
+  - 若 Python 仅通过 `proc.wait()` 监听启动器，会误以为“用户已关闭窗口”，在 `finally` 块中提前关闭 HTTP 服务，导致眼前刚打开的 Edge 窗口断网报错。
+* **铁律**：
+  1. **Win32 HWND 真实视窗看门狗**：若启动器退出耗时 `< 3s`，不得直接关机，转入 Win32 原生窗口句柄（HWND）巡检，通过 `user32.IsWindow()` 监听主窗口。只要用户的真实视窗还在，本地 HTTP 服务就持续坚守，窗口关闭后才优雅退出。
+  2. **启动前清空会话恢复历史**：Edge 在 `--user-data-dir` 下会将崩溃或报错页缓存在 `Sessions` 目录。启动前必须删除 `profile_dir/Default/Sessions`，并追加启动参数 `--disable-features=msEdgeContinueWhereYouLeftOff` 与 `--disable-session-crashed-bubble`，杜绝还原错误页。
+
+### 7. 桌面端 Web 前端导航栏与按钮绝对防折行铁律 (防 UI 挤压变形)
+* **根因**：
+  - Flex 容器在无强制换行限制下，遇宽度受限（如窗口收窄、高 DPI 缩放 125%/150%、动态状态标签插入）时，中文无空格会被自动从任意汉字处切断折行（如“手 动 链 / 接”）。
+* **铁律**：
+  1. **全局强制单行与绝对不折行**：
+     ```css
+     button, button *, .badge, select, option, .nowrap-btn {
+       white-space: nowrap !important;
+       word-break: keep-all !important;
+     }
+     button, select, .badge, .nowrap-btn {
+       flex-shrink: 0 !important;
+     }
+     ```
+  2. **外层容器横向滚动兜底**：导航条容器配置 `overflow-x-auto thin-scroll`，宽度极端不足时采用平滑横向滚动条，杜绝按钮被挤扁或换行。
+
 ---
 
 ## 标准工程模板
 
 本技能随附以下可直接复用的工业级模板：
 - [templates/bootstrap.bat](./templates/bootstrap.bat)：纯 ASCII 极简引导批处理
-- [templates/build_exe.py](./templates/build_exe.py)：跨平台健壮打包构建器
+- [templates/build_exe.py](./templates/build_exe.py)：跨平台健壮打包构建器（自带旧进程清理与会话缓存净化）
 - [templates/create_shortcut.py](./templates/create_shortcut.py)：Windows 桌面快捷方式自动化创建工具
+

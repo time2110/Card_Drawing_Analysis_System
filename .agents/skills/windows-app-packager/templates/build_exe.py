@@ -25,6 +25,19 @@ def build_app(app_name="桌面客户端", entry_script="desktop.py", icon_file="
     print(f"   [构建器] 开始打包单文件绿色版 EXE: {app_name}")
     print("=" * 60)
 
+    # 0. 优雅终结旧运行进程与清理历史崩溃会话
+    try:
+        subprocess.run(["taskkill", "/F", "/IM", f"{app_name}.exe", "/T"], capture_output=True)
+    except Exception:
+        pass
+    try:
+        import shutil
+        sessions_dir = os.path.join(base_dir, "dist", "data", "desktop_profile", "Default", "Sessions")
+        if os.path.exists(sessions_dir):
+            shutil.rmtree(sessions_dir, ignore_errors=True)
+    except Exception:
+        pass
+
     # 1. 检查 PyInstaller
     print("\n[1/3] 检查打包依赖 (PyInstaller)...")
     try:
