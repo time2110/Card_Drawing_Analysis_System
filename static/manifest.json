@@ -1,0 +1,23 @@
+{
+  "name": "鸣潮 & 原神 抽卡分析系统",
+  "short_name": "抽卡分析",
+  "description": "鸣潮与原神抽卡记录本地化统计与可视化分析工具",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0a0d14",
+  "theme_color": "#0a0d14",
+  "icons": [
+    {
+      "src": "/static/images/Hiyuki.png",
+      "sizes": "256x256",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/favicon.ico",
+      "sizes": "16x16 32x32 48x48 64x64 128x128 256x256",
+      "type": "image/x-icon"
+    }
+  ]
+}

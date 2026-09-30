@@ -328,9 +328,26 @@ class GenshinDataManager:
                 "hasData": False,
                 "players": [],
                 "activePlayer": None,
-                "totalPulls": 0,
-                "total5Star": 0,
-                "pools": {}
+                "totalPullsAll": 0,
+                "totalPrimogems": 0,
+                "total5StarAll": 0,
+                "globalAvgPity": 0.0,
+                "upCharAvgPity": 0.0,
+                "upWeaponAvgPity": 0.0,
+                "winRate": 55.0,
+                "limited5StarCount": 0,
+                "standard5StarCount": 0,
+                "luckScore": 60,
+                "rankTitle": "暂无数据",
+                "summaryGrid": [],
+                "charactersMatrix": [],
+                "pools": {
+                    "301": self._analyze_pool("301", [], max_pity=90, soft_pity=74),
+                    "302": self._analyze_pool("302", [], max_pity=80, soft_pity=63),
+                    "200": self._analyze_pool("200", [], max_pity=90, soft_pity=74),
+                    "500": self._analyze_pool("500", [], max_pity=90, soft_pity=74),
+                    "100": self._analyze_pool("100", [], max_pity=90, soft_pity=74),
+                }
             }
             
         if not player_id or player_id not in players:
@@ -410,19 +427,31 @@ class GenshinDataManager:
         """单卡池分析算法（按时间递增模拟抽卡队列）"""
         total = len(records)
         if total == 0:
+            p_name = GENSHIN_POOL_NAMES.get(int(pool_type), "祈愿")
             return {
                 "poolType": pool_type,
-                "poolName": GENSHIN_POOL_NAMES.get(int(pool_type), "祈愿"),
+                "name": p_name,
+                "poolName": p_name,
                 "totalPulls": 0,
+                "currentPity": 0,
+                "maxPity": max_pity,
+                "remainingPity": max_pity,
+                "isGuaranteedNext": False,
                 "fiveStarsCount": 0,
-                "fourStarsCount": 0,
                 "limited5StarCount": 0,
                 "standard5StarCount": 0,
+                "lostCount": 0,
+                "fourStarsCount": 0,
                 "pityCount": 0,
                 "pityRemain": max_pity,
+                "avg5Star": 0.0,
+                "avg4Star": 0.0,
                 "avgPity": 0.0,
                 "upCharAvgPity": 0.0,
                 "winRate": 55.0,
+                "luckScore": 60,
+                "luckTitle": "平平淡淡才是真",
+                "fiveStars": [],
                 "goldRecords": [],
                 "ranges": ["1-10", "11-50", "51-73", "74-85", "86+"],
                 "rangeCounts": [0, 0, 0, 0, 0]

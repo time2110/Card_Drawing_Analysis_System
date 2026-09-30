@@ -22,10 +22,30 @@ from http.server import BaseHTTPRequestHandler
 import threading
 import base64
 
-# 添加当前目录与模块路径
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-PARENT_DIR = os.path.dirname(BASE_DIR)
-sys.path.insert(0, BASE_DIR)
+# 防御 noconsole 打包环境下 stdout/stderr 为 None 导致的静默崩溃
+if sys.stdout is None:
+    try:
+        sys.stdout = open(os.devnull, "w", encoding="utf-8")
+    except Exception:
+        pass
+if sys.stderr is None:
+    try:
+        sys.stderr = open(os.devnull, "w", encoding="utf-8")
+    except Exception:
+        pass
+
+# 根目录与资源目录定义 (兼容源码运行与 PyInstaller 单文件打包)
+if getattr(sys, "frozen", False):
+    APP_DIR = os.path.dirname(sys.executable)
+    RESOURCE_DIR = getattr(sys, "_MEIPASS", APP_DIR)
+else:
+    APP_DIR = os.path.dirname(os.path.abspath(__file__))
+    RESOURCE_DIR = APP_DIR
+
+BASE_DIR = APP_DIR
+PARENT_DIR = os.path.dirname(APP_DIR)
+sys.path.insert(0, RESOURCE_DIR)
+sys.path.insert(0, APP_DIR)
 
 from gacha_core import (
     extract_latest_gacha_url,
@@ -75,10 +95,10 @@ from webdav_backup import (
     restore_from_payload
 )
 
-DATA_PATH = os.path.join(BASE_DIR, "data", "gacha_records.json")
+DATA_PATH = os.path.join(APP_DIR, "data", "gacha_records.json")
 KNOWN_GAME_LOG = r"C:\software\Wuthering Waves\Wuthering Waves Game\Client\Saved\Logs\Client.log"
 LOG_PATH = KNOWN_GAME_LOG if os.path.exists(KNOWN_GAME_LOG) else os.path.join(PARENT_DIR, "Client.log")
-STATIC_DIR = os.path.join(BASE_DIR, "static")
+STATIC_DIR = os.path.join(RESOURCE_DIR, "static")
 
 # 原神数据与日志路径
 GENSHIN_DATA_PATH = os.path.join(BASE_DIR, "data", "genshin_records.json")
@@ -177,10 +197,23 @@ def run_auto_sync_all():
         auto_sync_lock.release()
 
 def find_available_port(start_port=8765, max_attempts=20):
+    """
+    通过真实 bind 测试寻找 100% 干净且未被占用的端口
+    严禁使用单纯的 connect_ex，因为处于 TIME_WAIT 状态的端口 connect_ex 也会返回非零，
+    但在 Windows 下强行绑定处于 TIME_WAIT 的端口会导致 TCP RST 拒绝连接 (ERR_CONNECTION_REFUSED)！
+    """
     for port in range(start_port, start_port + max_attempts):
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            if s.connect_ex(('127.0.0.1', port)) != 0:
-                return port
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        try:
+            s.bind(('127.0.0.1', port))
+            s.close()
+            return port
+        except OSError:
+            try:
+                s.close()
+            except Exception:
+                pass
+            continue
     return start_port
 
 class GachaRequestHandler(BaseHTTPRequestHandler):
@@ -208,6 +241,11 @@ class GachaRequestHandler(BaseHTTPRequestHandler):
         parsed = urllib.parse.urlparse(self.path)
         path = parsed.path
         query = urllib.parse.parse_qs(parsed.query)
+
+        # API: 极速探活接口 (零 IO 零 CPU，毫秒级响应，专门供客户端冷启动探活使用)
+        if path == "/api/ping":
+            self.send_json(200, {"success": True, "ping": "pong"})
+            return
 
         # API: 状态检查
         if path == "/api/status":
@@ -389,8 +427,16 @@ class GachaRequestHandler(BaseHTTPRequestHandler):
             })
             return
 
-        # Favicon 处理
+        # Favicon 处理 (绯雪高清图标)
         if path == "/favicon.ico":
+            ico_path = os.path.join(STATIC_DIR, "favicon.ico")
+            if os.path.exists(ico_path):
+                self.send_response(200)
+                self.send_header("Content-Type", "image/x-icon")
+                self.end_headers()
+                with open(ico_path, "rb") as f:
+                    self.wfile.write(f.read())
+                return
             self.send_response(204)
             self.end_headers()
             return
@@ -400,10 +446,22 @@ class GachaRequestHandler(BaseHTTPRequestHandler):
             file_path = os.path.join(STATIC_DIR, "index.html")
             content_type = "text/html; charset=utf-8"
         else:
-            rel_path = path.lstrip("/")
+            decoded_path = urllib.parse.unquote(path)
+            rel_path = decoded_path.lstrip("/")
             if rel_path.startswith("static/"):
                 rel_path = rel_path[7:]
             file_path = os.path.join(STATIC_DIR, rel_path)
+
+            # 智能回退：若未直接找到对应图片，尝试在 avatars 或上级 images 目录寻找
+            if not os.path.exists(file_path):
+                base_name = os.path.basename(rel_path)
+                alt1 = os.path.join(STATIC_DIR, "images", "avatars", base_name)
+                alt2 = os.path.join(STATIC_DIR, "images", base_name)
+                if os.path.exists(alt1):
+                    file_path = alt1
+                elif os.path.exists(alt2):
+                    file_path = alt2
+
             if file_path.endswith(".css"):
                 content_type = "text/css; charset=utf-8"
             elif file_path.endswith(".js"):
@@ -414,6 +472,10 @@ class GachaRequestHandler(BaseHTTPRequestHandler):
                 content_type = "image/webp"
             elif file_path.endswith(".svg"):
                 content_type = "image/svg+xml"
+            elif file_path.endswith(".ico"):
+                content_type = "image/x-icon"
+            elif file_path.endswith(".json") or file_path.endswith(".webmanifest"):
+                content_type = "application/manifest+json; charset=utf-8"
             else:
                 content_type = "text/plain; charset=utf-8"
 
@@ -631,7 +693,11 @@ class GachaRequestHandler(BaseHTTPRequestHandler):
             # API: 全量恢复备份 (支持鸣潮、原神、自定义图鉴配置及坚果云配置)
         if path == "/api/backup/restore":
             content = req_data.get("data") if req_data.get("data") is not None else (req_data.get("jsonContent") or req_data)
-            ok, msg, detail = restore_from_payload(content)
+            overwrite = bool(req_data.get("overwrite", False))
+            ok, msg, detail = restore_from_payload(content, overwrite=overwrite)
+            if ok:
+                db_manager.load()
+                genshin_db_manager.load()
             self.send_json(200 if ok else 400, {
                 "success": ok,
                 "message": msg,
@@ -650,6 +716,9 @@ class GachaRequestHandler(BaseHTTPRequestHandler):
             # 若为包含坚果云配置或双端记录的全量备份包，直接走全量恢复
             if isinstance(import_data, dict) and ("wuwa" in import_data or "genshin" in import_data or "webdavConfig" in import_data):
                 ok, msg, detail = restore_from_payload(import_data)
+                if ok:
+                    db_manager.load()
+                    genshin_db_manager.load()
                 self.send_json(200 if ok else 400, {
                     "success": ok,
                     "message": msg,
@@ -856,6 +925,9 @@ class GachaRequestHandler(BaseHTTPRequestHandler):
             # 若为包含坚果云配置或双端记录的全量备份包，直接走全量恢复
             if isinstance(uigf_obj, dict) and ("wuwa" in uigf_obj or "genshin" in uigf_obj or "webdavConfig" in uigf_obj):
                 ok, msg, detail = restore_from_payload(uigf_obj)
+                if ok:
+                    db_manager.load()
+                    genshin_db_manager.load()
                 self.send_json(200 if ok else 400, {
                     "success": ok,
                     "message": msg,
@@ -962,7 +1034,11 @@ class GachaRequestHandler(BaseHTTPRequestHandler):
         # 坚果云: 从云端拉取恢复
         if path == "/api/webdav/restore":
             try:
-                ok, msg, detail = restore_backup_from_webdav()
+                overwrite = bool(req_data.get("overwrite", False))
+                ok, msg, detail = restore_backup_from_webdav(overwrite=overwrite)
+                if ok:
+                    db_manager.load()
+                    genshin_db_manager.load()
                 self.send_json(200 if ok else 400, {
                     "success": ok,
                     "message": msg,
@@ -977,7 +1053,7 @@ class GachaRequestHandler(BaseHTTPRequestHandler):
 
         self.send_error(404, "API endpoint not found")
 
-def start_server(port=None):
+def start_server(port=None, auto_open_browser=True):
     if port is None:
         port = find_available_port(8765)
         
@@ -986,28 +1062,33 @@ def start_server(port=None):
     url = f"http://127.0.0.1:{port}"
     
     print("=" * 60)
-    print("   鸣潮抽卡分析系统 (Wuthering Waves Gacha Tracker)")
+    print("   鸣潮 & 原神 抽卡分析系统 (Gacha Tracker)")
     print(f"   本地服务已成功启动: {url}")
     print(f"   游戏日志路径: {LOG_PATH}")
     print("=" * 60)
     
-    # 探测本地端口连通性，确保 HTTP 服务就绪后再唤起默认浏览器
+    # 探测本地 HTTP 服务就绪状态，确保服务端主循环 100% 准备就绪后再唤起默认浏览器
     def open_browser():
         start_time = time.time()
-        while time.time() - start_time < 5.0:
+        while time.time() - start_time < 6.0:
             try:
-                with socket.create_connection(("127.0.0.1", port), timeout=0.2):
-                    break
-            except (OSError, ConnectionRefusedError):
+                req = urllib.request.Request(f"{url}/api/status", headers={"User-Agent": "ReadyChecker"})
+                with urllib.request.urlopen(req, timeout=0.3) as resp:
+                    if resp.status == 200:
+                        time.sleep(0.2)
+                        break
+            except Exception:
                 time.sleep(0.1)
-        # 短暂缓冲确保服务主循环就绪
-        time.sleep(0.15)
         webbrowser.open(url)
         
-    # 启动时执行一次后台双端自动同步 (鸣潮 & 原神)
-    threading.Thread(target=run_auto_sync_all, daemon=True).start()
+    # 窗口唤起 3 秒后再执行后台双端自动同步，不抢占首屏资源
+    def delayed_auto_sync():
+        time.sleep(3.0)
+        run_auto_sync_all()
+    threading.Thread(target=delayed_auto_sync, daemon=True).start()
 
-    threading.Thread(target=open_browser, daemon=True).start()
+    if auto_open_browser:
+        threading.Thread(target=open_browser, daemon=True).start()
     
     try:
         httpd.serve_forever()

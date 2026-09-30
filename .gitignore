@@ -24,3 +24,12 @@ venv/
 .idea/
 Thumbs.db
 Desktop.ini
+
+# Desktop profile & cache
+data/desktop_profile/
+data/cache/
+
+# PyInstaller build artifacts
+build/
+dist/
+*.spec

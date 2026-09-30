@@ -226,6 +226,11 @@ class GachaDataManager:
                 pass
         return {"players": {}}
 
+    def load(self):
+        """重新从磁盘加载最新数据至内存"""
+        self.data = self._load()
+        return self.data
+
     def save(self):
         with open(self.data_file, "w", encoding="utf-8") as f:
             json.dump(self.data, f, ensure_ascii=False, indent=2)
@@ -233,7 +238,7 @@ class GachaDataManager:
     def merge_records(self, player_id, pool_type, new_records):
         """
         合并抽卡记录，保持完整抽取序列，支持精确去重与追加
-        new_records 由官方接口返回（倒序：最新在前）
+        new_records 可为官方接口返回（倒序：最新在前），亦可为全量备份/导出（正序：最旧在前）
         """
         if "players" not in self.data:
             self.data["players"] = {}
@@ -253,8 +258,18 @@ class GachaDataManager:
             
         existing = player_pools[pt]
         
-        # 官方接口返回的是从最新到最旧，转为从旧到新的正序
-        chrono_new = list(reversed(new_records)) if new_records else []
+        # 智能判定时序：若官方接口返回倒序（最新在前），转为从旧到新的正序；若已是正序（备份文件/数据库导出），保持原样
+        chrono_new = list(new_records) if new_records else []
+        is_descending = False
+        for i in range(len(chrono_new) - 1):
+            t_curr = chrono_new[i].get("time", "")
+            t_next = chrono_new[i + 1].get("time", "")
+            if t_curr and t_next and t_curr != t_next:
+                if t_curr > t_next:
+                    is_descending = True
+                break
+        if is_descending:
+            chrono_new.reverse()
         
         if not existing:
             player_pools[pt] = chrono_new
@@ -262,28 +277,26 @@ class GachaDataManager:
             self.save()
             return len(chrono_new), len(chrono_new)
             
-        # 按时间戳分组并携带组内顺序序号作为唯一特征，避免误删同十连内多把相同3星武器
-        def make_indexed_fingerprints(record_list):
-            fps = set()
-            ts_counter = {}
-            for r in record_list:
-                t = r.get("time", "")
-                ts_counter[t] = ts_counter.get(t, 0) + 1
-                idx = ts_counter[t]
-                fps.add(f"{t}_{idx}_{r.get('name')}_{r.get('qualityLevel')}_{r.get('resourceId', '')}")
-            return fps
+        # 多重集频次差分精确去重算法：
+        # 彻底摆脱对同秒内抽取相对顺序的依赖。针对同一时间戳 (如单次十连抽)，统计各物品 (time, name, quality) 的已有频次
+        # 无论新记录是正序、倒序或乱序，新记录中某物品的出现次数只有在超过本地已有频次时，才算真正的新增抽卡！
+        def get_record_key(r):
+            t = str(r.get("time", "")).strip()
+            name = str(r.get("name") or r.get("item_name") or "").strip()
+            quality = str(r.get("qualityLevel") or r.get("rank_type") or "3").strip()
+            return (t, name, quality)
 
-        existing_fps = make_indexed_fingerprints(existing)
-        
+        existing_counts = {}
+        for r in existing:
+            k = get_record_key(r)
+            existing_counts[k] = existing_counts.get(k, 0) + 1
+
         added = []
-        new_ts_counter = {}
+        new_seen_counts = {}
         for r in chrono_new:
-            t = r.get("time", "")
-            new_ts_counter[t] = new_ts_counter.get(t, 0) + 1
-            idx = new_ts_counter[t]
-            fp = f"{t}_{idx}_{r.get('name')}_{r.get('qualityLevel')}_{r.get('resourceId', '')}"
-            if fp not in existing_fps:
-                existing_fps.add(fp)
+            k = get_record_key(r)
+            new_seen_counts[k] = new_seen_counts.get(k, 0) + 1
+            if new_seen_counts[k] > existing_counts.get(k, 0):
                 added.append(r)
                 
         if added:

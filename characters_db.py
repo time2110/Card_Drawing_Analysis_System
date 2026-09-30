@@ -6,6 +6,7 @@
 """
 
 import os
+import sys
 import json
 
 IMG_BASE = "https://fastly.jsdelivr.net/gh/ryanbenson/wuthering-waves-assets@master/images/"
@@ -166,7 +167,7 @@ STANDARD_FIVE_WEAPONS = {
 CHARACTERS = {
     # 5星限定角色
     "仇远": {"star": 5, "element": "气动", "weapon": "迅刀", "type": "UP", "avatar": IMG_BASE + "Qiuyuan.png"},
-    "绯雪": {"star": 5, "element": "冷凝", "weapon": "迅刀", "type": "UP", "avatar": IMG_BASE + "Hiyuki.png"},
+    "绯雪": {"star": 5, "element": "冷凝", "weapon": "迅刀", "type": "UP", "avatar": "/images/Hiyuki.png"},
     "今汐": {"star": 5, "element": "衍射", "weapon": "重刃", "type": "UP", "avatar": IMG_BASE + "Jinhsi.png"},
     "长离": {"star": 5, "element": "热熔", "weapon": "迅刀", "type": "UP", "avatar": IMG_BASE + "Changli.png"},
     "椿": {"star": 5, "element": "湮灭", "weapon": "迅刀", "type": "UP", "avatar": IMG_BASE + "Camellya.png"},
@@ -290,11 +291,24 @@ def get_item_info(name, quality_level=None, resource_type=None, resource_id=None
         name = ALIAS_MAP[name]
 
     LOCAL_AVATAR_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static", "images", "avatars")
+    STATIC_IMG_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static", "images")
     local_avatar = ""
-    for ext in [".png", ".jpg", ".jpeg", ".webp"]:
-        local_path = os.path.join(LOCAL_AVATAR_DIR, f"{name}{ext}")
-        if os.path.exists(local_path):
-            local_avatar = f"/images/avatars/{name}{ext}"
+    
+    candidates = [name]
+    if name == "绯雪":
+        candidates.extend(["Hiyuki", "hiyuki"])
+        
+    for cand in candidates:
+        for ext in [".png", ".jpg", ".jpeg", ".webp"]:
+            p1 = os.path.join(LOCAL_AVATAR_DIR, f"{cand}{ext}")
+            p2 = os.path.join(STATIC_IMG_DIR, f"{cand}{ext}")
+            if os.path.exists(p1):
+                local_avatar = f"/images/avatars/{cand}{ext}"
+                break
+            elif os.path.exists(p2):
+                local_avatar = f"/images/{cand}{ext}"
+                break
+        if local_avatar:
             break
 
     if name in CHARACTERS:
@@ -380,7 +394,8 @@ def get_item_info(name, quality_level=None, resource_type=None, resource_id=None
     }
 
 # ================= 自定义配置管理与持久化 =================
-CONFIG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "custom_config.json")
+_BASE_DIR = os.path.dirname(sys.executable) if getattr(sys, "frozen", False) else os.path.dirname(os.path.abspath(__file__))
+CONFIG_PATH = os.path.join(_BASE_DIR, "data", "custom_config.json")
 
 def load_custom_config():
     """

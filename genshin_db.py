@@ -5,9 +5,10 @@
 """
 
 import os
+import sys
 import json
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+BASE_DIR = os.path.dirname(sys.executable) if getattr(sys, "frozen", False) else os.path.dirname(os.path.abspath(__file__))
 GENSHIN_CONFIG_PATH = os.path.join(BASE_DIR, "data", "genshin_custom_config.json")
 
 # 原神卡池类型映射 (官方 gacha_type)

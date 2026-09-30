@@ -15,7 +15,7 @@ import urllib.error
 from datetime import datetime
 from typing import Dict, Any, Tuple, Optional
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+BASE_DIR = os.path.dirname(sys.executable) if getattr(sys, "frozen", False) else os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(BASE_DIR, "data")
 CONFIG_PATH = os.path.join(DATA_DIR, "webdav_config.json")
 
@@ -206,8 +206,12 @@ def build_full_backup_payload() -> Dict[str, Any]:
         "webdavConfig": webdav_cfg
     }
 
-def restore_from_payload(data: Dict[str, Any]) -> Tuple[bool, str, Dict[str, Any]]:
-    """从备份数据字典中增量恢复鸣潮数据、原神数据、自定义配置及坚果云配置（只增不减原则）"""
+def restore_from_payload(data: Dict[str, Any], overwrite: bool = False) -> Tuple[bool, str, Dict[str, Any]]:
+    """
+    从备份数据字典中恢复鸣潮数据、原神数据、自定义配置及坚果云配置
+    :param overwrite: 若为 True，则执行全量镜像覆盖替换（彻底清空本地现有，完全以备份为准）；
+                      若为 False，则执行多重集增量去重合并（保留本地已有新记录，零重复叠加）。
+    """
     if not isinstance(data, dict):
         return False, "备份数据格式无效，应为 JSON 对象", {}
 
@@ -216,41 +220,57 @@ def restore_from_payload(data: Dict[str, Any]) -> Tuple[bool, str, Dict[str, Any
     webdav_restored = False
     custom_restored = False
 
-    # 1. 合并鸣潮抽卡数据
     from gacha_core import GachaDataManager, normalize_imported_records
     db_wuwa = GachaDataManager(os.path.join(DATA_DIR, "gacha_records.json"))
-    
-    if "wuwa" in data and isinstance(data["wuwa"], dict):
-        wuwa_records = data["wuwa"].get("players", {})
-        for pid, pdata in wuwa_records.items():
-            pools = pdata.get("pools", {})
-            for pt, rlist in pools.items():
-                c, _ = db_wuwa.merge_records(pid, pt, rlist)
-                added_wuwa += c
-    elif "players" in data and not ("info" in data and "uigf_version" in data.get("info", {})):
-        # 兼容纯鸣潮数据库格式
-        normalized = normalize_imported_records(data)
-        for pid, pools in normalized.items():
-            for pt, rlist in pools.items():
-                c, _ = db_wuwa.merge_records(pid, pt, rlist)
-                added_wuwa += c
-
-    # 2. 合并原神抽卡数据
     from genshin_core import GenshinDataManager
     db_genshin = GenshinDataManager(os.path.join(DATA_DIR, "genshin_records.json"))
-    
-    if "genshin" in data and isinstance(data["genshin"], dict):
-        genshin_records = data["genshin"].get("players", {})
-        for pid, pdata in genshin_records.items():
-            pools = pdata.get("pools", {})
-            for pt, rlist in pools.items():
-                c = db_genshin.merge_records(pid, pt, rlist)
+
+    if overwrite:
+        # 全量覆盖模式：以备份文件为绝对基准镜像替换
+        if "wuwa" in data and isinstance(data["wuwa"], dict):
+            db_wuwa.data = dict(data["wuwa"])
+            db_wuwa.save()
+        elif "players" in data and not ("info" in data and "uigf_version" in data.get("info", {})):
+            normalized = normalize_imported_records(data)
+            db_wuwa.data = {"players": {pid: {"playerId": pid, "lastSyncTime": datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "pools": pools} for pid, pools in normalized.items()}}
+            db_wuwa.save()
+
+        if "genshin" in data and isinstance(data["genshin"], dict):
+            db_genshin.data = dict(data["genshin"])
+            db_genshin.save()
+        elif "info" in data or "list" in data:
+            db_genshin.data = {"players": {}}
+            db_genshin.import_uigf(data)
+    else:
+        # 1. 增量合并鸣潮抽卡数据 (采用多重集差分精确去重)
+        if "wuwa" in data and isinstance(data["wuwa"], dict):
+            wuwa_records = data["wuwa"].get("players", {})
+            for pid, pdata in wuwa_records.items():
+                pools = pdata.get("pools", {})
+                for pt, rlist in pools.items():
+                    c, _ = db_wuwa.merge_records(pid, pt, rlist)
+                    added_wuwa += c
+        elif "players" in data and not ("info" in data and "uigf_version" in data.get("info", {})):
+            # 兼容纯鸣潮数据库格式
+            normalized = normalize_imported_records(data)
+            for pid, pools in normalized.items():
+                for pt, rlist in pools.items():
+                    c, _ = db_wuwa.merge_records(pid, pt, rlist)
+                    added_wuwa += c
+
+        # 2. 增量合并原神抽卡数据
+        if "genshin" in data and isinstance(data["genshin"], dict):
+            genshin_records = data["genshin"].get("players", {})
+            for pid, pdata in genshin_records.items():
+                pools = pdata.get("pools", {})
+                for pt, rlist in pools.items():
+                    c = db_genshin.merge_records(pid, pt, rlist)
+                    added_genshin += c
+        elif "info" in data or "list" in data:
+            # 兼容原神标准 UIGF 格式
+            ok, _, c = db_genshin.import_uigf(data)
+            if ok:
                 added_genshin += c
-    elif "info" in data or "list" in data:
-        # 兼容原神标准 UIGF 格式
-        ok, _, c = db_genshin.import_uigf(data)
-        if ok:
-            added_genshin += c
 
     # 3. 恢复自定义配置（立绘/别名等）
     custom_cfg = data.get("customConfig", {})
@@ -271,25 +291,48 @@ def restore_from_payload(data: Dict[str, Any]) -> Tuple[bool, str, Dict[str, Any
             save_webdav_config(webdav_cfg)
             webdav_restored = True
 
-    # 构建友好的提示信息
+    # 统计最终双端数据体量与账号列表
+    wuwa_players = list(db_wuwa.data.get("players", {}).keys())
+    total_wuwa_records = sum(
+        len(rlist) 
+        for p in db_wuwa.data.get("players", {}).values() 
+        for rlist in p.get("pools", {}).values()
+    )
+
+    genshin_players = list(db_genshin.data.get("players", {}).keys())
+    total_genshin_records = sum(
+        len(rlist) 
+        for p in db_genshin.data.get("players", {}).values() 
+        for rlist in p.get("pools", {}).values()
+    )
+
+    # 构建详尽透明的提示信息
     parts = []
-    if added_wuwa > 0:
-        parts.append(f"鸣潮新增 {added_wuwa} 条")
-    if added_genshin > 0:
-        parts.append(f"原神新增 {added_genshin} 条")
+    if wuwa_players:
+        wuwa_summary = f"鸣潮 {len(wuwa_players)} 个账号已就绪 (共 {total_wuwa_records} 条" + (f"，本次新增 {added_wuwa} 条" if added_wuwa > 0 else "，数据已完整") + ")"
+        parts.append(wuwa_summary)
+    if genshin_players:
+        genshin_summary = f"原神 {len(genshin_players)} 个账号已就绪 (共 {total_genshin_records} 条" + (f"，本次新增 {added_genshin} 条" if added_genshin > 0 else "，数据已完整") + ")"
+        parts.append(genshin_summary)
     if webdav_restored:
         parts.append("坚果云配置已恢复")
     if custom_restored:
         parts.append("自定义图鉴配置已恢复")
 
+    prefix = "全量镜像覆盖恢复成功！" if overwrite else "恢复成功！"
     if not parts:
-        msg = "备份恢复完成，当前数据已是最新，无新增条目"
+        msg = "备份恢复完成，当前数据已是最新"
     else:
-        msg = "恢复成功！" + "，".join(parts)
+        msg = prefix + "；".join(parts)
 
     return True, msg, {
+        "mode": "overwrite" if overwrite else "merge",
         "addedWuwa": added_wuwa,
         "addedGenshin": added_genshin,
+        "totalWuwaRecords": total_wuwa_records,
+        "totalGenshinRecords": total_genshin_records,
+        "wuwaPlayers": wuwa_players,
+        "genshinPlayers": genshin_players,
         "webdavRestored": webdav_restored,
         "customRestored": custom_restored,
         "backupTime": data.get("backupTime", "未知")
@@ -341,8 +384,8 @@ def upload_backup_to_webdav(cfg: Optional[Dict[str, Any]] = None) -> Tuple[bool,
         })
         return False, f"备份至坚果云异常: {str(e)}", {}
 
-def restore_backup_from_webdav(cfg: Optional[Dict[str, Any]] = None) -> Tuple[bool, str, Dict[str, Any]]:
-    """从坚果云拉取远端备份并增量合并到本地（只增不减原则，含坚果云配置）"""
+def restore_backup_from_webdav(cfg: Optional[Dict[str, Any]] = None, overwrite: bool = False) -> Tuple[bool, str, Dict[str, Any]]:
+    """从坚果云拉取远端备份并恢复到本地（支持增量合并或全量覆盖）"""
     if cfg is None:
         cfg = load_webdav_config()
 
@@ -363,6 +406,6 @@ def restore_backup_from_webdav(cfg: Optional[Dict[str, Any]] = None) -> Tuple[bo
             return False, f"拉取备份失败: HTTP {status}", {}
 
         data = json.loads(body.decode("utf-8"))
-        return restore_from_payload(data)
+        return restore_from_payload(data, overwrite=overwrite)
     except Exception as e:
         return False, f"从坚果云恢复异常: {str(e)}", {}

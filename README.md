@@ -69,21 +69,23 @@
   * ⚠️ **重要提示**：在 Windows 安装 Python 时，**务必勾选底部的 `Add python.exe to PATH`**（将 Python 添加到系统环境变量）。
 * **零依赖**：本项目完全使用 Python 内置库，**无需执行任何 `pip install`**。
 
-### 方式 A：Windows 双击一键启动（推荐）
-1. 下载或克隆本项目仓库到本地。
-2. 双击运行根目录下的 **`启动鸣潮抽卡分析.bat`**。
-3. 程序会自动启动本地服务并调起默认浏览器访问：
-   ```text
-   http://127.0.0.1:8765
-   ```
+### 方式 A：无黑框桌面原生客户端（强烈推荐 ⭐⭐⭐⭐⭐）
+1. 双击运行 **`创建桌面快捷方式.bat`**，即可直接在 Windows 桌面上生成**【抽卡分析系统】**快捷方式图标；
+2. 以后随时直接**双击桌面图标**，即可瞬间唤起**沉浸式无黑框独立桌面客户端**（告别 CMD 黑色控制台，摆脱浏览器地址栏与标签页干扰）！
+3. 也可双击目录下的 `启动抽卡分析(无黑框桌面版).vbs` 或 `启动抽卡分析-桌面版.bat` 直接调起。
 
-### 方式 B：跨平台命令行运行（Windows / macOS / Linux）
+### 方式 B：传统网页版浏览器启动
+双击运行根目录下的 **`启动鸣潮抽卡分析.bat`**，系统将在默认浏览器中打开 `http://127.0.0.1:8765`。
+
+### 方式 C：跨平台命令行运行（Windows / macOS / Linux）
 ```bash
-git clone https://github.com/time2110/Mingchao_Card_Drawing_Analysis_System.git
-cd Mingchao_Card_Drawing_Analysis_System
+git clone https://github.com/time2110/Card_Drawing_Analysis_System.git
+cd Card_Drawing_Analysis_System
+# 启动桌面独立客户端模式:
+python desktop.py
+# 或启动网页后台服务模式:
 python app.py
 ```
-终端输出运行日志后，打开浏览器访问 `http://127.0.0.1:8765` 即可。
 
 ---
 
@@ -148,6 +150,7 @@ python app.py
 ```text
 wuwa_tracker/
 ├── app.py                         # Web 服务核心 (双端路由、后台自动同步调度)
+├── desktop.py                     # 桌面原生客户端核心 (无边框独立视窗、进程管控)
 ├── webdav_backup.py               # 坚果云 / WebDAV 云端备份引擎 (纯原生实现)
 ├── gacha_core.py                  # 鸣潮抽卡核心 (XOR 解密、API 批量拉取、数据合并)
 ├── characters_db.py               # 鸣潮角色/武器元数据库与自定义持久化
@@ -155,7 +158,10 @@ wuwa_tracker/
 ├── genshin_db.py                  # 原神全量角色/武器元数据库 (1.0 ~ 5.x 全图鉴)
 ├── demo_data.py                   # 鸣潮仿真演示数据生成器
 ├── demo_data_genshin.py           # 原神仿真演示数据生成器
-├── 启动鸣潮抽卡分析.bat            # Windows 一键自启脚本
+├── 启动抽卡分析(无黑框桌面版).vbs  # Windows 沉浸式静默桌面启动器 (零黑框)
+├── 启动抽卡分析-桌面版.bat        # Windows 桌面版启动脚本
+├── 创建桌面快捷方式.bat            # 一键在 Windows 桌面上生成客户端图标
+├── 启动鸣潮抽卡分析.bat            # 传统网页版自启脚本
 ├── data/
 │   ├── gacha_records.json         # 鸣潮本地永久抽卡数据库 (只增不减)
 │   ├── genshin_records.json       # 原神本地永久抽卡数据库 (只增不减)

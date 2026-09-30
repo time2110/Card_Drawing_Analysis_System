@@ -5,6 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="referrer" content="no-referrer">
   <title>鸣潮抽卡分析系统 - 网页专业版</title>
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="icon" type="image/png" sizes="256x256" href="/static/images/Hiyuki.png">
+  <link rel="apple-touch-icon" href="/static/images/Hiyuki.png">
+  <meta name="theme-color" content="#0a0d14">
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- ECharts CDN -->
@@ -79,74 +84,84 @@
     .thin-scroll::-webkit-scrollbar-track { background: transparent; }
     .thin-scroll::-webkit-scrollbar-thumb { background: #232d42; border-radius: 3px; }
     .thin-scroll::-webkit-scrollbar-thumb:hover { background: #334155; }
+    /* 强制所有按钮、徽章与下拉控件及内部文字单行显示，绝对禁止文字折行 */
+    button, button *, .badge, select, option, .nowrap-btn {
+      white-space: nowrap !important;
+      word-break: keep-all !important;
+    }
+    button, select, .badge, .nowrap-btn {
+      flex-shrink: 0 !important;
+    }
   </style>
 </head>
 <body class="h-screen w-screen flex flex-col selection:bg-amber-500/30 selection:text-amber-200">
 
-  <!-- 顶部轻量导航条 (全宽，高度 48px) -->
+  <!-- 顶部轻量导航条 (全宽，高度 48px，强制单行排版与防挤压) -->
   <header class="border-b border-brand-border/80 bg-brand-bg/95 backdrop-blur flex-shrink-0 z-40">
-    <div class="w-full px-5 h-12 flex items-center justify-between">
-      <div class="flex items-center space-x-2.5">
-        <div class="w-7 h-7 rounded-lg bg-gradient-to-tr from-amber-500 to-yellow-400 flex items-center justify-center shadow shadow-amber-500/20">
+    <div class="w-full px-4 h-12 flex items-center justify-between overflow-x-auto thin-scroll space-x-3">
+      <!-- 左侧标题与游戏切换 -->
+      <div class="flex items-center space-x-2.5 flex-shrink-0">
+        <div class="w-7 h-7 rounded-lg bg-gradient-to-tr from-amber-500 to-yellow-400 flex items-center justify-center shadow shadow-amber-500/20 flex-shrink-0">
           <svg class="w-4 h-4 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.4" d="M13 10V3L4 14h7v7l9-11h-7z"/>
           </svg>
         </div>
-        <div class="flex items-center space-x-2">
-          <h1 id="appTitle" class="text-sm sm:text-base font-bold text-white tracking-wide">抽卡分析系统</h1>
+        <div class="flex items-center space-x-2 flex-shrink-0">
+          <h1 id="appTitle" class="text-sm font-bold text-white tracking-wide whitespace-nowrap">抽卡分析系统</h1>
           <!-- 游戏切换器 -->
-          <div class="flex items-center bg-slate-900/90 rounded-lg p-0.5 border border-slate-700/80 ml-1">
-            <button id="tabGameWuwa" class="px-2.5 py-1 rounded-md text-xs font-bold transition bg-amber-500 text-slate-950 shadow-sm flex items-center space-x-1 cursor-pointer">
+          <div class="flex items-center bg-slate-900/90 rounded-lg p-0.5 border border-slate-700/80 ml-1 flex-shrink-0">
+            <button id="tabGameWuwa" class="px-2.5 py-1 rounded-md text-xs font-bold transition bg-amber-500 text-slate-950 shadow-sm flex items-center space-x-1 cursor-pointer whitespace-nowrap flex-shrink-0">
               <span>鸣潮</span>
             </button>
-            <button id="tabGameGenshin" class="px-2.5 py-1 rounded-md text-xs font-medium text-slate-400 hover:text-white transition flex items-center space-x-1 cursor-pointer">
+            <button id="tabGameGenshin" class="px-2.5 py-1 rounded-md text-xs font-medium text-slate-400 hover:text-white transition flex items-center space-x-1 cursor-pointer whitespace-nowrap flex-shrink-0">
               <span>原神</span>
             </button>
           </div>
-          <span id="appSubBadge" class="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/30 font-medium">鸣潮专业版</span>
-          <span id="autoSyncBadge" class="hidden text-[10px] px-2 py-0.5 rounded-full font-medium transition-all duration-300"></span>
+          <span id="appSubBadge" class="hidden 2xl:inline-block text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/30 font-medium whitespace-nowrap flex-shrink-0">鸣潮专业版</span>
+          <span id="autoSyncBadge" class="hidden text-[10px] px-2 py-0.5 rounded-full font-medium transition-all duration-300 whitespace-nowrap flex-shrink-0"></span>
         </div>
       </div>
 
-      <!-- 右侧控制按钮 -->
-      <div class="flex items-center space-x-2.5">
-        <div class="flex items-center space-x-1.5 bg-slate-900/90 px-2.5 py-1 rounded-lg border border-slate-700/60 text-xs">
-          <span class="text-slate-400">UID:</span>
-          <select id="playerSelect" class="bg-transparent text-amber-300 font-mono font-bold text-xs focus:outline-none cursor-pointer">
+      <!-- 右侧控制按钮群 (强制所有按钮 whitespace-nowrap flex-shrink-0) -->
+      <div class="flex items-center space-x-1.5 flex-shrink-0">
+        <div class="flex items-center space-x-1.5 bg-slate-900/90 px-2 py-1.5 rounded-lg border border-slate-700/60 text-xs flex-shrink-0">
+          <span class="text-slate-400 whitespace-nowrap">UID:</span>
+          <select id="playerSelect" class="bg-transparent text-amber-300 font-mono font-bold text-xs focus:outline-none cursor-pointer whitespace-nowrap">
           </select>
         </div>
 
-        <button id="btnSyncLog" class="flex items-center space-x-1 px-3 py-1.5 rounded-lg bg-gradient-to-r from-amber-500 to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-slate-950 font-bold text-xs transition shadow shadow-amber-500/20 active:scale-95 cursor-pointer">
-          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-          <span id="btnSyncLogText">一键从日志同步</span>
+        <button id="btnSyncLog" class="flex items-center space-x-1 px-2.5 py-1.5 rounded-lg bg-gradient-to-r from-amber-500 to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-slate-950 font-bold text-xs transition shadow shadow-amber-500/20 active:scale-95 cursor-pointer whitespace-nowrap flex-shrink-0">
+          <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+          <span id="btnSyncLogText" class="whitespace-nowrap">一键从日志同步</span>
         </button>
 
-        <button id="btnManualUrl" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs border border-slate-700 transition cursor-pointer">
+        <button id="btnManualUrl" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs border border-slate-700 transition cursor-pointer whitespace-nowrap flex-shrink-0">
           手动链接
         </button>
 
-        <button id="btnLoadDemo" title="加载演示数据快速体验" class="px-2.5 py-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-amber-400 hover:text-amber-300 text-xs border border-amber-500/30 transition cursor-pointer hidden sm:flex items-center space-x-1">
+        <button id="btnLoadDemo" title="加载演示数据快速体验" class="px-2 py-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-amber-400 hover:text-amber-300 text-xs border border-amber-500/30 transition cursor-pointer flex items-center space-x-1 whitespace-nowrap flex-shrink-0">
           <span>🎮 演示</span>
         </button>
 
-        <button id="btnOpenConfig" class="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-300 hover:text-amber-200 border border-amber-500/30 text-xs font-semibold transition shadow-sm active:scale-95 cursor-pointer">
-          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><circle cx="12" cy="12" r="3" stroke-width="2"/></svg>
-          <span>⚙️ 配置</span>
+        <button id="btnOpenConfig" title="配置与角色武器管理" class="flex items-center space-x-1 px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-300 hover:text-amber-200 border border-amber-500/30 text-xs font-semibold transition shadow-sm active:scale-95 cursor-pointer whitespace-nowrap flex-shrink-0">
+          <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><circle cx="12" cy="12" r="3" stroke-width="2"/></svg>
+          <span class="whitespace-nowrap">配置</span>
         </button>
 
-        <button id="btnOpenWebdav" class="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-sky-950/80 hover:bg-sky-900/90 text-sky-300 hover:text-sky-200 border border-sky-500/40 text-xs font-semibold transition shadow-sm active:scale-95 cursor-pointer" title="坚果云 / WebDAV 云端数据备份与恢复">
-          <span>☁️ 坚果云备份</span>
+        <button id="btnOpenWebdav" class="flex items-center space-x-1 px-2.5 py-1.5 rounded-lg bg-sky-950/80 hover:bg-sky-900/90 text-sky-300 hover:text-sky-200 border border-sky-500/40 text-xs font-semibold transition shadow-sm active:scale-95 cursor-pointer whitespace-nowrap flex-shrink-0" title="坚果云 / WebDAV 云端数据备份与恢复">
+          <span class="whitespace-nowrap">☁️ 坚果云</span>
         </button>
 
-        <div class="h-4 w-px bg-slate-800 hidden sm:block"></div>
+        <div class="h-4 w-px bg-slate-800 flex-shrink-0"></div>
 
-        <button id="btnExport" title="导出全量备份 JSON (包含鸣潮、原神抽卡记录、角色配置与坚果云配置)" class="flex items-center space-x-1 px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs border border-slate-700 transition cursor-pointer">
-          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-          <span class="hidden md:inline">导出备份</span>
+        <button id="btnExport" title="导出全量备份 JSON (包含鸣潮、原神抽卡记录、角色配置与坚果云配置)" class="flex items-center space-x-1 px-2 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs border border-slate-700 transition cursor-pointer whitespace-nowrap flex-shrink-0">
+          <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+          <span class="whitespace-nowrap">导出</span>
         </button>
-        <button id="btnImportTrigger" title="恢复备份 JSON (一键恢复鸣潮、原神及坚果云配置)" class="flex items-center space-x-1 px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-300 hover:text-amber-200 border border-amber-500/30 text-xs font-semibold transition cursor-pointer">
-          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
-          <span>恢复备份</span>
+
+        <button id="btnImportTrigger" title="恢复备份 JSON (一键恢复鸣潮、原神及坚果云配置)" class="flex items-center space-x-1 px-2 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-300 hover:text-amber-200 border border-amber-500/30 text-xs font-semibold transition cursor-pointer whitespace-nowrap flex-shrink-0">
+          <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+          <span class="whitespace-nowrap">恢复</span>
         </button>
         <input type="file" id="fileInput" accept=".json" class="hidden">
       </div>
@@ -962,8 +977,8 @@
       try {
         if (syncBadge) {
           syncBadge.classList.remove("hidden");
-          syncBadge.innerHTML = `<span class="animate-spin text-[10px]">🔄</span><span>后台自动同步中...</span>`;
-          syncBadge.className = "text-[10px] px-2 py-0.5 rounded-full bg-sky-500/10 text-sky-400 border border-sky-500/30 flex items-center space-x-1";
+          syncBadge.innerHTML = `<span class="animate-spin text-[10px]">🔄</span><span>自动同步中...</span>`;
+          syncBadge.className = "text-[10px] px-2 py-0.5 rounded-full bg-sky-500/15 text-sky-300 border border-sky-500/30 flex items-center space-x-1 whitespace-nowrap flex-shrink-0";
         }
         
         // 触发自动同步
@@ -983,11 +998,11 @@
               const gAdded = g.added || 0;
               
               if (syncBadge) {
-                syncBadge.innerHTML = `<span>⚡</span><span>自动同步完成</span>`;
-                syncBadge.className = "text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 flex items-center space-x-1";
+                syncBadge.innerHTML = `<span>⚡</span><span>同步完成</span>`;
+                syncBadge.className = "text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 flex items-center space-x-1 whitespace-nowrap flex-shrink-0";
                 setTimeout(() => {
                   syncBadge.classList.add("hidden");
-                }, 5000);
+                }, 3000);
               }
 
               if (wAdded > 0 || gAdded > 0) {
@@ -1448,8 +1463,14 @@
     }
 
     async function handleWebdavRestore() {
-      if (!confirm("确定要从云端拉取备份并增量合并到本地吗？\n（系统将采用只增不减原则合并鸣潮与原神历史记录，绝不会丢失本地已有数据）")) {
-        return;
+      const choice = confirm("请选择云端恢复模式：\n\n【点击“确定”】执行智能增量合并（推荐：不删除本地新记录，基于多重集精确去重叠加）\n【点击“取消”】若您想完全以云端备份为准覆盖替换本地数据，请点击取消后确认。");
+      let overwrite = false;
+      if (!choice) {
+        if (confirm("是否要执行【完全镜像覆盖还原】？\n\n⚠️ 警告：这将彻底清空本地现存数据，100% 替换为云端备份快照，彻底清理所有本地重复或冲突数据！")) {
+          overwrite = true;
+        } else {
+          return;
+        }
       }
 
       const btn = document.getElementById("btnWebdavRestore");
@@ -1460,13 +1481,22 @@
       try {
         const resp = await fetch("/api/webdav/restore", {
           method: "POST",
-          headers: { "Content-Type": "application/json" }
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ overwrite: overwrite })
         });
         const res = await resp.json();
         if (res.success) {
-          showToast(`云端恢复完成！${res.message || ''}`, "success");
+          const detail = res.detail || {};
+          let extraHint = "";
+          if (state.currentGame === "genshin" && (detail.totalWuwaRecords > 0 || (detail.wuwaPlayers && detail.wuwaPlayers.length > 0))) {
+            extraHint = ` (鸣潮 ${detail.totalWuwaRecords || '全量'} 条数据亦已就绪，点击顶栏【鸣潮】即可切换查看)`;
+          } else if (state.currentGame === "wuwa" && (detail.totalGenshinRecords > 0 || (detail.genshinPlayers && detail.genshinPlayers.length > 0))) {
+            extraHint = ` (原神 ${detail.totalGenshinRecords || '全量'} 条数据亦已就绪，点击顶栏【原神】即可切换查看)`;
+          }
+          showToast(`${res.message}${extraHint}`, "success");
           confetti({ particleCount: 90, spread: 70, origin: { y: 0.7 } });
-          loadAnalysisData();
+          renderPoolTabs();
+          await loadAnalysisData();
           await loadWebdavConfig();
         } else {
           showToast("云端恢复失败: " + (res.message || "请检查云端是否有备份文件"), "error");
@@ -2028,17 +2058,37 @@
         const text = await file.text();
         const json = JSON.parse(text);
 
+        let overwrite = false;
+        if (json.wuwa || json.genshin || json.webdavConfig) {
+          const choice = confirm("检测到全量备份数据！请选择恢复模式：\n\n【点击“确定”】智能增量合并（推荐：不删除本地新记录，基于多重集精确去重叠加）\n【点击“取消”】若想完全以该备份文件为准覆盖替换本地数据，请点击取消后确认。");
+          if (!choice) {
+            if (confirm("是否要执行【完全镜像覆盖还原】？\n\n⚠️ 警告：这将彻底清空本地现存数据，100% 替换为该备份文件快照，彻底清理所有本地重复或冲突数据！")) {
+              overwrite = true;
+            } else {
+              return;
+            }
+          }
+        }
+
         // 优先调用全量恢复接口 (支持恢复坚果云配置与双端记录)
         const resp = await fetch("/api/backup/restore", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ data: json })
+          body: JSON.stringify({ data: json, overwrite: overwrite })
         });
         const res = await resp.json();
         if (res.success) {
-          showToast(res.message, "success");
+          const detail = res.detail || {};
+          let extraHint = "";
+          if (state.currentGame === "genshin" && (detail.totalWuwaRecords > 0 || (detail.wuwaPlayers && detail.wuwaPlayers.length > 0))) {
+            extraHint = ` (鸣潮 ${detail.totalWuwaRecords || '全量'} 条数据亦已就绪，点击顶栏【鸣潮】即可切换查看)`;
+          } else if (state.currentGame === "wuwa" && (detail.totalGenshinRecords > 0 || (detail.genshinPlayers && detail.genshinPlayers.length > 0))) {
+            extraHint = ` (原神 ${detail.totalGenshinRecords || '全量'} 条数据亦已就绪，点击顶栏【原神】即可切换查看)`;
+          }
+          showToast(`${res.message}${extraHint}`, "success");
           confetti({ particleCount: 80, spread: 60, origin: { y: 0.7 } });
-          loadAnalysisData();
+          renderPoolTabs();
+          await loadAnalysisData();
           // 若恢复了坚果云配置，同步刷新坚果云配置状态
           if (res.detail && res.detail.webdavRestored) {
             await loadWebdavConfig();
@@ -2204,18 +2254,20 @@
         ? (state.currentPool === "302" ? 80 : (state.currentPool === "100" ? 20 : 90))
         : (state.currentPool === "5" ? 50 : 80);
 
-      const pool = (d.pools && d.pools[state.currentPool]) ? d.pools[state.currentPool] : {
-        currentPity: 0,
-        maxPity: defaultMaxPity,
-        remainingPity: defaultMaxPity,
-        isGuaranteedNext: false,
-        avg5Star: 0,
-        avg4Star: 0,
-        fiveStarsCount: 0,
-        fourStarsCount: 0,
-        luckScore: 50,
-        luckTitle: "暂无数据",
-        fiveStars: []
+      const poolRaw = (d && d.pools && d.pools[state.currentPool]) ? d.pools[state.currentPool] : {};
+      const pool = {
+        name: poolRaw.name || poolRaw.poolName || "祈愿",
+        currentPity: poolRaw.currentPity ?? poolRaw.pityCount ?? 0,
+        maxPity: poolRaw.maxPity ?? defaultMaxPity,
+        remainingPity: poolRaw.remainingPity ?? poolRaw.pityRemain ?? defaultMaxPity,
+        isGuaranteedNext: !!poolRaw.isGuaranteedNext,
+        avg5Star: poolRaw.avg5Star ?? poolRaw.avgPity ?? 0,
+        avg4Star: poolRaw.avg4Star ?? 0,
+        fiveStarsCount: poolRaw.fiveStarsCount ?? 0,
+        fourStarsCount: poolRaw.fourStarsCount ?? 0,
+        luckScore: poolRaw.luckScore ?? 60,
+        luckTitle: poolRaw.luckTitle ?? "平平淡淡才是真",
+        fiveStars: poolRaw.fiveStars || poolRaw.goldRecords || []
       };
 
       // 水位进度
@@ -2314,7 +2366,8 @@
         </div>
       `;
 
-      if (!pool.fiveStars || pool.fiveStars.length === 0) {
+      const fiveStarsList = pool.fiveStars || pool.goldRecords || [];
+      if (!fiveStarsList || fiveStarsList.length === 0) {
         html += `
           <div class="py-16 text-center text-slate-500 text-xs">
             该卡池暂无五星出金历史记录
@@ -2327,7 +2380,7 @@
       // 2. 依次渲染每次出金行（由新到旧倒序）
       const maxP = pool.maxPity || (state.currentGame === "genshin" ? (state.currentPool === "302" ? 80 : (state.currentPool === "100" ? 20 : 90)) : 80);
 
-      html += pool.fiveStars.map(f => {
+      html += fiveStarsList.map(f => {
         let barBg;
         let labelText;
 
@@ -2351,15 +2404,19 @@
 
         const isWeaponItem = f.category === "武器" || state.currentPool === "2" || state.currentPool === "4" || state.currentPool === "302";
         const fallback = generateItemBadgeAvatar(f.name, 5, isWeaponItem ? "武器" : "角色");
-        const avatarSrc = f.avatar || fallback;
+        const isHiyuki = f.name === "绯雪" || f.name === "Hiyuki";
+        const avatarSrc = f.avatar || (isHiyuki ? "/images/Hiyuki.png" : fallback);
         const imgFit = isWeaponItem ? 'object-contain p-0.5' : 'object-cover';
+        const onErr = isHiyuki 
+          ? `if(this.src&&!this.src.includes('Hiyuki.png')){this.src='/images/Hiyuki.png';}else{this.src='${fallback}';}` 
+          : `this.src='${fallback}';`;
 
         return `
           <div class="flex items-center space-x-3 hover:bg-slate-900/50 p-1.5 rounded-xl transition">
             <div class="relative w-10 h-10 rounded-lg overflow-hidden bg-slate-950 border-2 ${
               f.isLost5050 ? 'border-slate-600 opacity-75' : 'border-amber-400'
             } flex items-center justify-center flex-shrink-0 shadow">
-              <img src="${avatarSrc}" alt="${f.name}" class="w-full h-full ${imgFit}" onerror="this.src='${fallback}'">
+              <img src="${avatarSrc}" alt="${f.name}" class="w-full h-full ${imgFit}" onerror="${onErr}">
             </div>
 
             <div class="flex-1 flex items-center min-w-0 pr-1">
@@ -2523,8 +2580,12 @@
 
         const isWeapon = (r.resourceType === "武器" || r.item_type === "武器" || (!r.resourceType && star < 4));
         const fallback = generateItemBadgeAvatar(r.name, star, isWeapon ? '武器' : '角色');
+        const isHiyuki = r.name === "绯雪" || r.name === "Hiyuki";
+        const avatarUrl = r.avatar || (isHiyuki ? "/images/Hiyuki.png" : fallback);
         const imgFit = isWeapon ? 'object-contain p-0.5' : 'object-cover';
-        const avatarUrl = r.avatar || fallback;
+        const onErr = isHiyuki
+          ? `if(this.src&&!this.src.includes('Hiyuki.png')){this.src='/images/Hiyuki.png';}else{this.src='${fallback}';}`
+          : `this.src='${fallback}';`;
 
         const borderClass = star === 5 
           ? 'border-amber-400/80 shadow shadow-amber-500/20' 
@@ -2538,7 +2599,7 @@
             <td class="py-2 px-4 font-sans font-semibold text-white">
               <div class="flex items-center space-x-2.5">
                 <div class="w-8 h-8 rounded-lg overflow-hidden bg-slate-900 border ${borderClass} flex-shrink-0 flex items-center justify-center">
-                  <img src="${avatarUrl}" alt="${r.name}" class="w-full h-full ${imgFit}" onerror="this.src='${fallback}'" />
+                  <img src="${avatarUrl}" alt="${r.name}" class="w-full h-full ${imgFit}" onerror="${onErr}" />
                 </div>
                 <span class="truncate">${r.name}</span>
               </div>
