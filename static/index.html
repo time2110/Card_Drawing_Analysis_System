@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="referrer" content="no-referrer">
   <title>鸣潮抽卡分析系统 - 网页专业版</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -92,8 +93,18 @@
           </svg>
         </div>
         <div class="flex items-center space-x-2">
-          <h1 class="text-sm sm:text-base font-bold text-white tracking-wide">鸣潮抽卡分析系统</h1>
-          <span class="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/30 font-medium">网页专业版</span>
+          <h1 id="appTitle" class="text-sm sm:text-base font-bold text-white tracking-wide">抽卡分析系统</h1>
+          <!-- 游戏切换器 -->
+          <div class="flex items-center bg-slate-900/90 rounded-lg p-0.5 border border-slate-700/80 ml-1">
+            <button id="tabGameWuwa" class="px-2.5 py-1 rounded-md text-xs font-bold transition bg-amber-500 text-slate-950 shadow-sm flex items-center space-x-1 cursor-pointer">
+              <span>鸣潮</span>
+            </button>
+            <button id="tabGameGenshin" class="px-2.5 py-1 rounded-md text-xs font-medium text-slate-400 hover:text-white transition flex items-center space-x-1 cursor-pointer">
+              <span>原神</span>
+            </button>
+          </div>
+          <span id="appSubBadge" class="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/30 font-medium">鸣潮专业版</span>
+          <span id="autoSyncBadge" class="hidden text-[10px] px-2 py-0.5 rounded-full font-medium transition-all duration-300"></span>
         </div>
       </div>
 
@@ -105,26 +116,30 @@
           </select>
         </div>
 
-        <button id="btnSyncLog" class="flex items-center space-x-1 px-3 py-1.5 rounded-lg bg-gradient-to-r from-amber-500 to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-slate-950 font-bold text-xs transition shadow shadow-amber-500/20 active:scale-95">
+        <button id="btnSyncLog" class="flex items-center space-x-1 px-3 py-1.5 rounded-lg bg-gradient-to-r from-amber-500 to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-slate-950 font-bold text-xs transition shadow shadow-amber-500/20 active:scale-95 cursor-pointer">
           <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-          <span>一键从日志同步</span>
+          <span id="btnSyncLogText">一键从日志同步</span>
         </button>
 
-        <button id="btnManualUrl" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs border border-slate-700 transition">
+        <button id="btnManualUrl" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs border border-slate-700 transition cursor-pointer">
           手动链接
         </button>
 
-        <button id="btnOpenConfig" class="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-300 hover:text-amber-200 border border-amber-500/30 text-xs font-semibold transition shadow-sm active:scale-95">
+        <button id="btnLoadDemo" title="加载演示数据快速体验" class="px-2.5 py-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-amber-400 hover:text-amber-300 text-xs border border-amber-500/30 transition cursor-pointer hidden sm:flex items-center space-x-1">
+          <span>🎮 演示</span>
+        </button>
+
+        <button id="btnOpenConfig" class="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-300 hover:text-amber-200 border border-amber-500/30 text-xs font-semibold transition shadow-sm active:scale-95 cursor-pointer">
           <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><circle cx="12" cy="12" r="3" stroke-width="2"/></svg>
-          <span>⚙️ 自定义配置</span>
+          <span>⚙️ 配置</span>
         </button>
 
         <div class="h-4 w-px bg-slate-800 hidden sm:block"></div>
 
-        <button id="btnExport" title="导出备份 JSON" class="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white border border-slate-700 transition hidden sm:flex">
+        <button id="btnExport" title="导出备份 JSON" class="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white border border-slate-700 transition hidden sm:flex cursor-pointer">
           <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
         </button>
-        <button id="btnImportTrigger" title="导入备份 JSON" class="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white border border-slate-700 transition hidden sm:flex">
+        <button id="btnImportTrigger" title="导入备份 JSON" class="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white border border-slate-700 transition hidden sm:flex cursor-pointer">
           <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
         </button>
         <input type="file" id="fileInput" accept=".json" class="hidden">
@@ -142,24 +157,24 @@
         <!-- 左侧四大指标卡片 (严格与工坊一致) -->
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-slate-900/80 p-2 rounded-xl border border-slate-800 flex-shrink-0">
           <div class="text-center px-4">
-            <div id="statWinRate" class="text-xl sm:text-2xl font-black text-amber-400 font-mono">33.3%</div>
+            <div id="statWinRate" class="text-xl sm:text-2xl font-black text-amber-400 font-mono">--%</div>
             <div class="text-[11px] text-slate-400 mt-0.5">小保底不歪</div>
           </div>
           <div class="text-center px-4 border-l border-slate-800">
             <div class="text-xl sm:text-2xl font-black text-amber-400 font-mono">
-              <span id="statTotal5Star">13</span><span class="text-xs text-amber-300 font-normal ml-0.5">金</span>
+              <span id="statTotal5Star">0</span><span class="text-xs text-amber-300 font-normal ml-0.5">金</span>
             </div>
             <div class="text-[11px] text-slate-400 mt-0.5">五星数</div>
           </div>
           <div class="text-center px-4 border-l border-slate-800">
             <div class="text-xl sm:text-2xl font-black text-amber-400 font-mono">
-              <span id="statAvgChar">64.3</span><span class="text-xs text-amber-300 font-normal ml-0.5">抽</span>
+              <span id="statAvgChar">--</span><span class="text-xs text-amber-300 font-normal ml-0.5">抽</span>
             </div>
             <div class="text-[11px] text-slate-400 mt-0.5">每UP角色需</div>
           </div>
           <div class="text-center px-4 border-l border-slate-800">
             <div class="text-xl sm:text-2xl font-black text-amber-400 font-mono">
-              <span id="statAvgWeapon">29</span><span class="text-xs text-amber-300 font-normal ml-0.5">抽</span>
+              <span id="statAvgWeapon">--</span><span class="text-xs text-amber-300 font-normal ml-0.5">抽</span>
             </div>
             <div class="text-[11px] text-slate-400 mt-0.5">每UP武器需</div>
           </div>
@@ -168,7 +183,7 @@
         <!-- 中间：五星图鉴收集矩阵展示 (头像 + 命座角标) -->
         <div class="flex-1 flex flex-col justify-center min-w-0 px-2">
           <div class="text-[11px] text-slate-400 mb-1 flex items-center justify-between">
-            <span>共获得限定五星 <b id="countLimited5Star" class="text-amber-400 font-mono">7</b> 个，常驻五星 <b id="countStandard5Star" class="text-amber-400 font-mono">6</b> 个：</span>
+            <span>共获得限定五星 <b id="countLimited5Star" class="text-amber-400 font-mono">0</b> 个，常驻五星 <b id="countStandard5Star" class="text-amber-400 font-mono">0</b> 个：</span>
             <span class="text-[10px] text-slate-500 hidden md:inline">右上角为额外命座/数量</span>
           </div>
           <div id="summaryAvatarGrid" class="flex flex-wrap gap-2 items-center">
@@ -199,26 +214,8 @@
     <!-- 2. 卡池切换 Tab (红框选择区) + 视图模式切换 (分析看板 / 单独全量日志) -->
     <div class="w-full flex items-center justify-between border-b border-brand-border/60 pb-1.5 flex-shrink-0 gap-3">
       
-      <!-- 红框选择区：卡池 Tab 列表 -->
-      <div class="flex items-center space-x-2 overflow-x-auto thin-scroll flex-1">
-        <button class="pool-tab-btn active px-3 py-1.5 rounded-lg font-medium text-xs sm:text-sm flex items-center space-x-1.5 transition bg-amber-500/15 text-amber-300 border border-amber-500/30 flex-shrink-0" data-pool="1">
-          <span>🌟 角色活动唤取 (绯雪)</span>
-        </button>
-        <button class="pool-tab-btn px-3 py-1.5 rounded-lg font-medium text-xs sm:text-sm flex items-center space-x-1.5 transition text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 flex-shrink-0" data-pool="2">
-          <span>🗡️ 武器活动唤取 (霜天灼刃)</span>
-        </button>
-        <button class="pool-tab-btn px-3 py-1.5 rounded-lg font-medium text-xs sm:text-sm flex items-center space-x-1.5 transition text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 flex-shrink-0" data-pool="3">
-          <span>👤 角色常驻唤取</span>
-        </button>
-        <button class="pool-tab-btn px-3 py-1.5 rounded-lg font-medium text-xs sm:text-sm flex items-center space-x-1.5 transition text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 flex-shrink-0" data-pool="4">
-          <span>⚔️ 武器常驻唤取</span>
-        </button>
-        <button class="pool-tab-btn px-3 py-1.5 rounded-lg font-medium text-xs sm:text-sm flex items-center space-x-1.5 transition text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 flex-shrink-0" data-pool="5">
-          <span>🎁 新手唤取</span>
-        </button>
-        <button class="pool-tab-btn px-3 py-1.5 rounded-lg font-medium text-xs sm:text-sm flex items-center space-x-1.5 transition text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 flex-shrink-0" data-pool="6">
-          <span>🎯 新手自选唤取</span>
-        </button>
+      <!-- 卡池 Tab 列表 (动态渲染) -->
+      <div id="poolTabsWrapper" class="flex items-center space-x-2 overflow-x-auto thin-scroll flex-1">
       </div>
 
       <!-- 视图模式切换：分析看板 / 单独全量日志 -->
@@ -413,7 +410,7 @@
           </div>
           <div>
             <h3 class="text-sm font-bold text-white">从游戏日志同步抽卡记录</h3>
-            <p class="text-[11px] text-slate-400">鸣潮安装目录或日志目录可能不固定，请选择或配置日志路径</p>
+            <p id="syncLogSubtitle" class="text-[11px] text-slate-400">鸣潮安装目录或日志目录可能不固定，请选择或配置日志路径</p>
           </div>
         </div>
         <button id="btnCloseSyncLogModal" class="text-slate-400 hover:text-white text-2xl p-1 leading-none">&times;</button>
@@ -423,7 +420,7 @@
       <div class="space-y-3">
         <div>
           <label class="block text-[11px] text-slate-300 font-semibold mb-1.5 flex items-center justify-between">
-            <span>日志所在目录或 Client.log 完整文件路径：</span>
+            <span id="syncLogPathLabel">日志所在目录或 Client.log 完整文件路径：</span>
             <span id="syncLogPathHint" class="text-[10px] text-amber-300/80">支持文件夹路径或 .log 文件</span>
           </label>
           <div class="flex items-center space-x-2">
@@ -432,7 +429,7 @@
               <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
               <span>浏览选择</span>
             </button>
-            <input type="file" id="syncLogFileInput" accept=".log" class="hidden" />
+            <input type="file" id="syncLogFileInput" accept=".log,.txt" class="hidden" />
           </div>
         </div>
 
@@ -486,9 +483,9 @@
         <button id="btnCloseModal" class="text-slate-400 hover:text-white text-lg">&times;</button>
       </div>
       <p class="text-xs text-slate-400 leading-relaxed">
-        可直接粘贴游戏内抽卡记录 URL（以 https://aki-gm-resources 开头）：
+        可直接粘贴游戏内抽卡记录 URL（鸣潮以 <code class="text-amber-300">aki-gm-resources</code> 开头；原神包含 <code class="text-amber-300">authkey</code> 或 <code class="text-amber-300">e20190909gacha</code>）：
       </p>
-      <textarea id="manualUrlInput" rows="4" placeholder="https://aki-gm-resources.../record?svr_id=...&player_id=..." class="w-full bg-slate-950 border border-brand-border rounded-xl p-3 text-xs text-slate-200 focus:outline-none focus:border-amber-500 font-mono"></textarea>
+      <textarea id="manualUrlInput" rows="4" placeholder="粘贴鸣潮抽卡 URL 或 原神祈愿历史 URL..." class="w-full bg-slate-950 border border-brand-border rounded-xl p-3 text-xs text-slate-200 focus:outline-none focus:border-amber-500 font-mono"></textarea>
       <div class="flex items-center justify-end space-x-3 pt-1">
         <button id="btnCancelModal" class="px-3.5 py-1.5 rounded-xl bg-slate-800 text-slate-300 text-xs">取消</button>
         <button id="btnSubmitManualUrl" class="px-4 py-1.5 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs">开始同步</button>
@@ -724,6 +721,7 @@
   <script>
     // 全局数据状态
     const state = {
+      currentGame: "wuwa", // 'wuwa' 或 'genshin'
       analysisData: null,
       currentPool: "1",
       currentView: "analysis", // 'analysis' or 'log'
@@ -737,14 +735,33 @@
     let distChart = null;
     let ratioChart = null;
 
-    const POOL_NAMES_MAP = {
-      "1": "🌟 角色活动唤取 (绯雪)",
-      "2": "🗡️ 武器活动唤取 (霜天灼刃)",
-      "3": "👤 角色常驻唤取",
-      "4": "⚔️ 武器常驻唤取",
-      "5": "🎁 新手唤取",
-      "6": "🎯 新手自选唤取"
-    };
+    const WUWA_POOLS = [
+      { id: "1", name: "角色活动唤取", icon: "🌟" },
+      { id: "2", name: "武器活动唤取", icon: "🗡️" },
+      { id: "3", name: "角色常驻唤取", icon: "👤" },
+      { id: "4", name: "武器常驻唤取", icon: "⚔️" },
+      { id: "5", name: "新手唤取", icon: "🎁" },
+      { id: "6", name: "新手自选唤取", icon: "🎯" }
+    ];
+
+    const GENSHIN_POOLS = [
+      { id: "301", name: "角色活动祈愿", icon: "🌟" },
+      { id: "302", name: "武器活动祈愿", icon: "🗡️" },
+      { id: "200", name: "常驻祈愿", icon: "🌌" },
+      { id: "500", name: "集录祈愿", icon: "📜" },
+      { id: "100", name: "新手祈愿", icon: "🎁" }
+    ];
+
+    function getCurrentPools() {
+      return state.currentGame === "genshin" ? GENSHIN_POOLS : WUWA_POOLS;
+    }
+
+    function getApiUrl(endpoint) {
+      if (state.currentGame === "genshin") {
+        return `/api/genshin${endpoint}`;
+      }
+      return `/api${endpoint}`;
+    }
 
     function showToast(msg, type = "success") {
       const toast = document.getElementById("toast");
@@ -757,11 +774,112 @@
       }, 4000);
     }
 
+    // 动态生成新角色/武器的高质感艺术徽章（杜绝未收录条目的空白与破损感）
+    function generateItemBadgeAvatar(name, star = 5, category = "角色") {
+      const text = (name || "新").slice(0, 2);
+      const is5 = star >= 5;
+      const is4 = star === 4;
+      const bgGrad = is5 
+        ? '<linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#b45309"/><stop offset="50%" stop-color="#d97706"/><stop offset="100%" stop-color="#78350f"/></linearGradient>'
+        : (is4 
+          ? '<linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#7e22ce"/><stop offset="100%" stop-color="#3b0764"/></linearGradient>'
+          : '<linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#0284c7"/><stop offset="100%" stop-color="#0f172a"/></linearGradient>');
+      const strokeColor = is5 ? '#fde047' : (is4 ? '#c084fc' : '#38bdf8');
+      const textColor = is5 ? '#fef08a' : (is4 ? '#f3e8ff' : '#e0f2fe');
+      
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 80 80">
+        <defs>${bgGrad}</defs>
+        <rect width="80" height="80" rx="12" fill="url(#bg)"/>
+        <rect x="2" y="2" width="76" height="76" rx="10" fill="none" stroke="${strokeColor}" stroke-width="2" stroke-opacity="0.7"/>
+        <text x="50%" y="54%" font-family="system-ui, -apple-system, sans-serif" font-weight="900" font-size="26" fill="${textColor}" text-anchor="middle" dominant-baseline="middle">${text}</text>
+      </svg>`;
+      return "data:image/svg+xml;utf8," + encodeURIComponent(svg);
+    }
+
     document.addEventListener("DOMContentLoaded", () => {
+      let savedGame = "wuwa";
+      try {
+        savedGame = localStorage.getItem("wuwa_tracker_current_game") || "wuwa";
+      } catch (e) {}
+
+      if (savedGame === "genshin") {
+        state.currentGame = "genshin";
+        state.currentPool = "301";
+        const tabWuwa = document.getElementById("tabGameWuwa");
+        const tabGenshin = document.getElementById("tabGameGenshin");
+        const subBadge = document.getElementById("appSubBadge");
+        if (tabGenshin && tabWuwa && subBadge) {
+          document.title = "原神抽卡分析系统 - 网页专业版";
+          document.getElementById("appTitle").innerText = "原神抽卡分析";
+          tabGenshin.className = "px-2.5 py-1 rounded-md text-xs font-bold transition bg-amber-500 text-slate-950 shadow-sm flex items-center space-x-1 cursor-pointer";
+          tabWuwa.className = "px-2.5 py-1 rounded-md text-xs font-medium text-slate-400 hover:text-white transition flex items-center space-x-1 cursor-pointer";
+          subBadge.innerText = "原神专业版";
+        }
+      }
+
       initCharts();
+      renderPoolTabs();
       bindEvents();
       loadAnalysisData();
+      initAutoSyncOnStartup();
     });
+
+    async function initAutoSyncOnStartup() {
+      const syncBadge = document.getElementById("autoSyncBadge");
+      try {
+        if (syncBadge) {
+          syncBadge.classList.remove("hidden");
+          syncBadge.innerHTML = `<span class="animate-spin text-[10px]">🔄</span><span>后台自动同步中...</span>`;
+          syncBadge.className = "text-[10px] px-2 py-0.5 rounded-full bg-sky-500/10 text-sky-400 border border-sky-500/30 flex items-center space-x-1";
+        }
+        
+        // 触发自动同步
+        await fetch("/api/auto_sync", { method: "POST" });
+        
+        let attempts = 0;
+        const timer = setInterval(async () => {
+          attempts++;
+          try {
+            const resp = await fetch("/api/auto_sync");
+            const res = await resp.json();
+            if (res.success && res.status && !res.status.running) {
+              clearInterval(timer);
+              const w = res.status.wuwa || {};
+              const g = res.status.genshin || {};
+              const wAdded = w.added || 0;
+              const gAdded = g.added || 0;
+              
+              if (syncBadge) {
+                syncBadge.innerHTML = `<span>⚡</span><span>自动同步完成</span>`;
+                syncBadge.className = "text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 flex items-center space-x-1";
+                setTimeout(() => {
+                  syncBadge.classList.add("hidden");
+                }, 5000);
+              }
+
+              if (wAdded > 0 || gAdded > 0) {
+                let msg = "后台自动同步完成！";
+                if (wAdded > 0) msg += ` 鸣潮新增 ${wAdded} 条`;
+                if (gAdded > 0) msg += ` 原神新增 ${gAdded} 条`;
+                showToast(msg, "success");
+                loadAnalysisData();
+              } else if (w.success || g.success) {
+                showToast("后台自动同步完成，数据已是最新！", "success");
+              }
+            } else if (attempts >= 15) {
+              clearInterval(timer);
+              if (syncBadge) syncBadge.classList.add("hidden");
+            }
+          } catch (e) {
+            clearInterval(timer);
+            if (syncBadge) syncBadge.classList.add("hidden");
+          }
+        }, 1200);
+      } catch (e) {
+        console.log("后台静默自动同步:", e);
+        if (syncBadge) syncBadge.classList.add("hidden");
+      }
+    }
 
     function initCharts() {
       distChart = echarts.init(document.getElementById("chartDistribution"));
@@ -772,6 +890,72 @@
           ratioChart && ratioChart.resize();
         }
       });
+    }
+
+    function renderPoolTabs() {
+      const container = document.getElementById("poolTabsWrapper");
+      const pools = getCurrentPools();
+      
+      if (!pools.some(p => p.id === state.currentPool)) {
+        state.currentPool = pools[0].id;
+      }
+      
+      container.innerHTML = pools.map(p => {
+        const isActive = p.id === state.currentPool;
+        const activeClass = "bg-amber-500/15 text-amber-300 border border-amber-500/30";
+        const inactiveClass = "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60";
+        return `
+          <button class="pool-tab-btn ${isActive ? 'active ' + activeClass : inactiveClass} px-3 py-1.5 rounded-lg font-medium text-xs sm:text-sm flex items-center space-x-1.5 transition flex-shrink-0 cursor-pointer" data-pool="${p.id}">
+            <span>${p.icon}</span>
+            <span>${p.name}</span>
+          </button>
+        `;
+      }).join("");
+
+      container.querySelectorAll(".pool-tab-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+          state.currentPool = btn.dataset.pool;
+          state.recordsPage = 1;
+          renderPoolTabs();
+          renderPoolOverview();
+          loadPoolRecords();
+        });
+      });
+
+      const curObj = getCurrentPools().find(x => x.id === state.currentPool);
+      document.getElementById("currentPoolTitle").innerText = curObj ? `${curObj.icon} ${curObj.name}` : "抽卡记录";
+    }
+
+    function switchGame(game) {
+      if (state.currentGame === game) return;
+      state.currentGame = game;
+      try {
+        localStorage.setItem("wuwa_tracker_current_game", game);
+      } catch (e) {}
+      
+      const tabWuwa = document.getElementById("tabGameWuwa");
+      const tabGenshin = document.getElementById("tabGameGenshin");
+      const subBadge = document.getElementById("appSubBadge");
+      
+      if (game === "genshin") {
+        document.title = "原神抽卡分析系统 - 网页专业版";
+        document.getElementById("appTitle").innerText = "原神抽卡分析";
+        tabGenshin.className = "px-2.5 py-1 rounded-md text-xs font-bold transition bg-amber-500 text-slate-950 shadow-sm flex items-center space-x-1 cursor-pointer";
+        tabWuwa.className = "px-2.5 py-1 rounded-md text-xs font-medium text-slate-400 hover:text-white transition flex items-center space-x-1 cursor-pointer";
+        subBadge.innerText = "原神专业版";
+        state.currentPool = "301";
+      } else {
+        document.title = "鸣潮抽卡分析系统 - 网页专业版";
+        document.getElementById("appTitle").innerText = "鸣潮抽卡分析";
+        tabWuwa.className = "px-2.5 py-1 rounded-md text-xs font-bold transition bg-amber-500 text-slate-950 shadow-sm flex items-center space-x-1 cursor-pointer";
+        tabGenshin.className = "px-2.5 py-1 rounded-md text-xs font-medium text-slate-400 hover:text-white transition flex items-center space-x-1 cursor-pointer";
+        subBadge.innerText = "鸣潮专业版";
+        state.currentPool = "1";
+      }
+      
+      state.recordsPage = 1;
+      renderPoolTabs();
+      loadAnalysisData();
     }
 
     function switchViewMode(mode) {
@@ -800,6 +984,13 @@
     }
 
     function bindEvents() {
+      // 游戏切换按钮
+      document.getElementById("tabGameWuwa").addEventListener("click", () => switchGame("wuwa"));
+      document.getElementById("tabGameGenshin").addEventListener("click", () => switchGame("genshin"));
+
+      // 演示数据按钮
+      document.getElementById("btnLoadDemo").addEventListener("click", loadDemoData);
+
       // 视图模式切换按键
       document.getElementById("viewBtnAnalysis").addEventListener("click", () => switchViewMode("analysis"));
       document.getElementById("viewBtnLog").addEventListener("click", () => switchViewMode("log"));
@@ -828,24 +1019,6 @@
         triggerSync(url);
       });
 
-      // 卡池切换 (红框区域按钮)
-      document.querySelectorAll(".pool-tab-btn").forEach(btn => {
-        btn.addEventListener("click", (e) => {
-          document.querySelectorAll(".pool-tab-btn").forEach(b => {
-            b.className = "pool-tab-btn px-3 py-1.5 rounded-lg font-medium text-xs sm:text-sm flex items-center space-x-1.5 transition text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 flex-shrink-0";
-          });
-          btn.className = "pool-tab-btn active px-3 py-1.5 rounded-lg font-medium text-xs sm:text-sm flex items-center space-x-1.5 transition bg-amber-500/15 text-amber-300 border border-amber-500/30 flex-shrink-0";
-          state.currentPool = btn.dataset.pool;
-          state.recordsPage = 1;
-
-          // 更新卡池标题
-          document.getElementById("currentPoolTitle").innerText = POOL_NAMES_MAP[state.currentPool] || "唤取记录";
-
-          renderPoolOverview();
-          loadPoolRecords();
-        });
-      });
-
       // 切换 UID
       document.getElementById("playerSelect").addEventListener("change", (e) => {
         state.recordsPage = 1;
@@ -854,7 +1027,7 @@
 
       // 导出数据
       document.getElementById("btnExport").addEventListener("click", () => {
-        window.open("/api/export", "_blank");
+        window.open(getApiUrl("/export"), "_blank");
       });
 
       // 导入数据
@@ -924,13 +1097,28 @@
 
     async function openSyncLogModal() {
       document.getElementById("syncLogModal").classList.remove("hidden");
+      const isGenshin = state.currentGame === "genshin";
+      const subtitle = document.getElementById("syncLogSubtitle");
+      const label = document.getElementById("syncLogPathLabel");
+      const hint = document.getElementById("syncLogPathHint");
+      const input = document.getElementById("syncLogPathInput");
+
+      if (isGenshin) {
+        if (subtitle) subtitle.innerText = "原神 output_log.txt 日志目录因安装位置而异，请配置或浏览选择文件";
+        if (label) label.innerText = "原神 output_log.txt 完整文件路径：";
+        if (hint) hint.innerText = "支持 output_log.txt 或包含该文件的目录";
+        input.placeholder = "例如: C:\\Users\\你的用户名\\AppData\\LocalLow\\miHoYo\\原神\\output_log.txt";
+      } else {
+        if (subtitle) subtitle.innerText = "鸣潮安装目录或日志目录可能不固定，请选择或配置日志路径";
+        if (label) label.innerText = "日志所在目录或 Client.log 完整文件路径：";
+        if (hint) hint.innerText = "支持文件夹路径或 Client.log 文件";
+        input.placeholder = "例如: C:\\software\\Wuthering Waves\\Wuthering Waves Game\\Client\\Saved\\Logs";
+      }
+
       try {
-        const resp = await fetch("/api/status");
+        const resp = await fetch(getApiUrl("/status"));
         const res = await resp.json();
-        const input = document.getElementById("syncLogPathInput");
-        if (!input.value.trim()) {
-          input.value = res.customLogPath || res.effectiveLogPath || res.defaultLogPath || "";
-        }
+        input.value = res.customLogPath || res.effectiveLogPath || res.defaultLogPath || "";
       } catch (e) {
         console.error("获取日志默认路径失败:", e);
       }
@@ -956,7 +1144,7 @@
       box.className = "rounded-xl p-3 border text-xs space-y-1 bg-slate-950/60 border-slate-800";
 
       try {
-        const resp = await fetch("/api/check_log", {
+        const resp = await fetch(getApiUrl("/check_log"), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -971,21 +1159,21 @@
           title.className = "font-bold text-emerald-300";
           title.innerText = `检测正常 - 有效抽卡凭证`;
           desc.className = "text-[11px] text-emerald-200/90 leading-relaxed";
-          desc.innerText = `成功定位到有效日志，解析出玩家 UID: ${res.playerId || '已就绪'}。点击下方按钮即可开始增量同步！`;
+          desc.innerText = `成功定位到有效日志，解析出凭据。点击下方按钮即可开始增量同步！`;
         } else if (!res.hasUrl && res.path) {
           box.className = "rounded-xl p-3 border text-xs space-y-1 bg-amber-950/30 border-amber-500/40";
           icon.innerText = "⚠️";
           title.className = "font-bold text-amber-300";
           title.innerText = "未在日志中检测到抽卡链接";
           desc.className = "text-[11px] text-amber-200/90 leading-relaxed";
-          desc.innerText = res.message || "日志文件存在，但没有记录或链接已过期。请先启动游戏并在游戏内打开一次【唤取记录】历史页面，然后再点击【重新检测】！";
+          desc.innerText = res.message || "日志文件存在，但没有抽卡记录或链接已过期。请启动游戏并在游戏内打开一次历史记录，然后再点击【重新检测】！";
         } else {
           box.className = "rounded-xl p-3 border text-xs space-y-1 bg-rose-950/30 border-rose-500/40";
           icon.innerText = "❌";
           title.className = "font-bold text-rose-300";
           title.innerText = "路径无效或文件不存在";
           desc.className = "text-[11px] text-rose-200/90 leading-relaxed";
-          desc.innerText = res.message || "未能找到 Client.log 文件，请检查路径是否正确，或点击【浏览选择】手动定位文件。";
+          desc.innerText = res.message || "未能找到日志文件，请检查路径是否正确。";
         }
       } catch (err) {
         box.className = "rounded-xl p-3 border text-xs space-y-1 bg-rose-950/30 border-rose-500/40";
@@ -1061,7 +1249,7 @@
         btnText.innerText = "正在同步中...";
 
         try {
-          const resp = await fetch("/api/sync", {
+          const resp = await fetch(getApiUrl("/sync"), {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -1075,7 +1263,10 @@
             closeSyncLogModal();
             showToast(res.message, "success");
             confetti({ particleCount: 80, spread: 60, origin: { y: 0.7 } });
-            loadAnalysisData(res.playerId);
+            await loadAnalysisData(res.playerId);
+            if (typeof checkStatus === "function") {
+              await checkStatus();
+            }
           } else {
             showToast(res.message, "error");
           }
@@ -1173,10 +1364,16 @@
 
     async function loadConfigData() {
       try {
-        const resp = await fetch("/api/config");
+        const resp = await fetch(getApiUrl("/config"));
         const res = await resp.json();
         if (res.success && res.config) {
           configState.configData = res.config;
+          if (res.config.elements) {
+            const elemSelect = document.getElementById("selectCharElement");
+            if (elemSelect) {
+              elemSelect.innerHTML = res.config.elements.map(e => `<option value="${e}">${e}</option>`).join("") + '<option value="武器">武器通用</option>';
+            }
+          }
           // 渲染角色列表
           filterAndRenderChars();
           // 渲染别名列表
@@ -1207,15 +1404,27 @@
 
       const filtered = q ? list.filter(c => (c.name || '').toLowerCase().includes(q) || String(c.id || '').includes(q)) : list;
 
+      if (filtered.length === 0) {
+        container.innerHTML = `<span class="text-xs text-slate-500 col-span-3 py-4 text-center">未找到匹配的角色或武器条目</span>`;
+        return;
+      }
+
       container.innerHTML = filtered.map(c => {
         const is5 = c.star === 5;
-        const starColor = is5 ? "text-amber-400 border-amber-500/40 bg-amber-500/10" : "text-purple-300 border-purple-500/40 bg-purple-500/10";
-        const avatarSrc = c.avatar || "https://api.iconify.design/lucide:user.svg";
+        const isWeapon = c.category === "武器";
+        const fallbackIcon = isWeapon ? "https://api.iconify.design/lucide:sword.svg" : "https://api.iconify.design/lucide:user.svg";
+        const imgFit = isWeapon ? "object-contain p-0.5" : "object-cover";
+        const avatarSrc = c.avatar || fallbackIcon;
+        const starColor = is5 
+          ? "bg-amber-500/20 text-amber-300 border-amber-500/40" 
+          : (c.star === 4 
+              ? "bg-purple-500/20 text-purple-300 border-purple-500/40" 
+              : "bg-sky-500/20 text-sky-300 border-sky-500/20");
         
         return `
           <div class="char-card-item bg-slate-900 hover:bg-slate-800/80 border border-slate-800 hover:border-amber-500/40 rounded-xl p-2 flex items-center space-x-2 transition cursor-pointer" onclick='populateCharForm(${JSON.stringify(c)})'>
-            <div class="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0 bg-slate-950 border border-slate-700">
-              <img src="${avatarSrc}" alt="${c.name}" class="w-full h-full object-cover" onerror="this.src='https://api.iconify.design/lucide:user.svg';" />
+            <div class="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0 bg-slate-950 border border-slate-700 flex items-center justify-center">
+              <img src="${avatarSrc}" alt="${c.name}" class="w-full h-full ${imgFit}" onerror="this.src='${fallbackIcon}';" />
             </div>
             <div class="flex-1 min-w-0">
               <div class="flex items-center space-x-1">
@@ -1294,7 +1503,7 @@
       }
 
       try {
-        const resp = await fetch("/api/config", {
+        const resp = await fetch(getApiUrl("/config"), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload)
@@ -1315,7 +1524,7 @@
     async function handleSaveCustomUrl(andSync = false) {
       const url = document.getElementById("cfgCustomUrlInput").value.trim();
       try {
-        const resp = await fetch("/api/config", {
+        const resp = await fetch(getApiUrl("/config"), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ customUrl: url })
@@ -1383,7 +1592,7 @@
       }
 
       try {
-        const resp = await fetch("/api/config", {
+        const resp = await fetch(getApiUrl("/config"), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -1405,6 +1614,23 @@
       }
     }
 
+    // 加载演示数据
+    async function loadDemoData() {
+      try {
+        const resp = await fetch(getApiUrl("/demo"), { method: "POST" });
+        const res = await resp.json();
+        if (res.success) {
+          showToast(res.message, "success");
+          confetti({ particleCount: 70, spread: 60, origin: { y: 0.7 } });
+          loadAnalysisData(res.playerId);
+        } else {
+          showToast(res.message || "加载演示数据失败", "error");
+        }
+      } catch (e) {
+        showToast("请求失败: " + e.message, "error");
+      }
+    }
+
     // 处理导入文件
     async function handleFileImport(e) {
       const file = e.target.files[0];
@@ -1412,10 +1638,11 @@
       try {
         const text = await file.text();
         const json = JSON.parse(text);
-        const resp = await fetch("/api/import", {
+        const payload = state.currentGame === "genshin" ? { jsonContent: json } : { data: json };
+        const resp = await fetch(getApiUrl("/import"), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ data: json })
+          body: JSON.stringify(payload)
         });
         const res = await resp.json();
         if (res.success) {
@@ -1438,7 +1665,7 @@
       btn.innerHTML = `<span class="animate-spin mr-1">🔄</span> 正在同步...`;
 
       try {
-        const resp = await fetch("/api/sync", {
+        const resp = await fetch(getApiUrl("/sync"), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ url: urlStr })
@@ -1462,11 +1689,18 @@
     // 加载整体分析数据
     async function loadAnalysisData(playerId = null) {
       try {
-        const url = playerId ? `/api/analysis?playerId=${playerId}` : `/api/analysis`;
+        const base = getApiUrl("/analysis");
+        const url = playerId ? `${base}?playerId=${playerId}` : base;
         const resp = await fetch(url);
         const res = await resp.json();
         if (res.success && res.data) {
           state.analysisData = res.data;
+          renderHeaderStats();
+          renderSummaryGrid();
+          renderPoolOverview();
+          loadPoolRecords();
+        } else {
+          state.analysisData = null;
           renderHeaderStats();
           renderSummaryGrid();
           renderPoolOverview();
@@ -1480,13 +1714,27 @@
     // 渲染顶部分析与四大核心指标
     function renderHeaderStats() {
       const d = state.analysisData;
-      if (!d) return;
-
       const select = document.getElementById("playerSelect");
+      if (!d) {
+        select.innerHTML = `<option value="">暂无记录</option>`;
+        document.getElementById("rankTitle").innerText = "暂无数据";
+        if (document.getElementById("statCharPoolPulls")) document.getElementById("statCharPoolPulls").innerText = "0";
+        document.getElementById("statAvgPity").innerText = "0.0";
+        document.getElementById("statWinRate").innerText = "--%";
+        document.getElementById("statTotal5Star").innerText = "0";
+        document.getElementById("statAvgChar").innerText = "--";
+        document.getElementById("statAvgWeapon").innerText = "--";
+        document.getElementById("countLimited5Star").innerText = "0";
+        document.getElementById("countStandard5Star").innerText = "0";
+        return;
+      }
+
       if (d.players && d.players.length > 0) {
         select.innerHTML = d.players.map(p => `
           <option value="${p}" ${p === d.activePlayer ? 'selected' : ''}>${p}</option>
         `).join("");
+      } else {
+        select.innerHTML = `<option value="">暂无记录</option>`;
       }
 
       document.getElementById("rankTitle").innerText = d.rankTitle || "终极无敌至尊欧皇";
@@ -1495,14 +1743,14 @@
       }
       document.getElementById("statAvgPity").innerText = d.globalAvgPity > 0 ? d.globalAvgPity : "0.0";
 
-      // 4大核心指标（完全对齐鸣潮工坊）
-      document.getElementById("statWinRate").innerText = (d.winRate !== undefined ? d.winRate : 33.3) + "%";
-      document.getElementById("statTotal5Star").innerText = d.total5StarAll || 13;
-      document.getElementById("statAvgChar").innerText = d.upCharAvgPity || "64.3";
-      document.getElementById("statAvgWeapon").innerText = d.upWeaponAvgPity || "29";
+      // 4大核心指标（完全对齐工坊真实数据）
+      document.getElementById("statWinRate").innerText = (d.winRate !== undefined ? d.winRate : "--") + "%";
+      document.getElementById("statTotal5Star").innerText = d.total5StarAll ?? 0;
+      document.getElementById("statAvgChar").innerText = (d.upCharAvgPity && d.upCharAvgPity > 0) ? d.upCharAvgPity : "--";
+      document.getElementById("statAvgWeapon").innerText = (d.upWeaponAvgPity && d.upWeaponAvgPity > 0) ? d.upWeaponAvgPity : "--";
 
-      document.getElementById("countLimited5Star").innerText = d.limited5StarCount || 7;
-      document.getElementById("countStandard5Star").innerText = d.standard5StarCount || 6;
+      document.getElementById("countLimited5Star").innerText = d.limited5StarCount ?? 0;
+      document.getElementById("countStandard5Star").innerText = d.standard5StarCount ?? 0;
     }
 
     // 渲染顶栏五星图鉴网格（带重复次数徽章）
@@ -1515,12 +1763,16 @@
       }
 
       grid.innerHTML = d.summaryGrid.map(item => {
+        const isWeapon = item.category === "武器";
+        const fallback = generateItemBadgeAvatar(item.name, item.star || 5, item.category);
+        const avatarSrc = item.avatar || fallback;
+        const imgFit = isWeapon ? 'object-contain p-0.5' : 'object-cover';
         const badgeNum = item.category === "角色" ? (item.count > 1 ? item.count - 1 : '') : item.count;
         return `
           <div class="relative w-11 h-11 rounded-xl overflow-hidden bg-slate-900 border-2 ${
             item.isStandard ? 'border-slate-600' : 'border-amber-400'
           } shadow flex-shrink-0 group cursor-pointer" title="${item.name} (${item.count}次)">
-            <img src="${item.avatar || 'https://api.iconify.design/lucide:user.svg'}" alt="${item.name}" class="w-full h-full object-cover group-hover:scale-105 transition" onerror="this.src='https://api.iconify.design/lucide:user.svg'">
+            <img src="${avatarSrc}" alt="${item.name}" class="w-full h-full ${imgFit} group-hover:scale-105 transition" onerror="this.src='${fallback}'">
             ${
               badgeNum !== '' ? `
                 <div class="absolute top-0 right-0 bg-black/85 text-amber-300 font-mono font-black text-[10px] px-1 py-0.2 rounded-bl border-b border-l border-amber-500/40">
@@ -1539,12 +1791,15 @@
     // 渲染当前卡池总览与出金瀑布流
     function renderPoolOverview() {
       const d = state.analysisData;
-      if (!d) return;
+      const isGenshin = state.currentGame === "genshin";
+      const defaultMaxPity = isGenshin 
+        ? (state.currentPool === "302" ? 80 : (state.currentPool === "100" ? 20 : 90))
+        : (state.currentPool === "5" ? 50 : 80);
 
       const pool = (d.pools && d.pools[state.currentPool]) ? d.pools[state.currentPool] : {
         currentPity: 0,
-        maxPity: (state.currentPool === "5") ? 50 : 80,
-        remainingPity: (state.currentPool === "5") ? 50 : 80,
+        maxPity: defaultMaxPity,
+        remainingPity: defaultMaxPity,
         isGuaranteedNext: false,
         avg5Star: 0,
         avg4Star: 0,
@@ -1564,20 +1819,47 @@
 
       // 保底状态标签
       const tag = document.getElementById("pityStatusTag");
-      if (state.currentPool === "1") {
-        if (pool.isGuaranteedNext) {
-          tag.innerText = "大保底 100% UP";
-          tag.className = "text-[11px] px-2.5 py-0.5 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold";
+      if (isGenshin) {
+        if (state.currentPool === "301") {
+          if (pool.isGuaranteedNext) {
+            tag.innerText = "大保底 100% UP";
+            tag.className = "text-[11px] px-2.5 py-0.5 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold";
+          } else {
+            tag.innerText = "小保底 55% (捕获明光)";
+            tag.className = "text-[11px] px-2.5 py-0.5 rounded-md bg-yellow-500/10 text-yellow-400 border border-yellow-500/30 font-medium";
+          }
+        } else if (state.currentPool === "302") {
+          tag.innerText = "武器定轨保底 (80 抽)";
+          tag.className = "text-[11px] px-2.5 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold";
+        } else if (state.currentPool === "500") {
+          tag.innerText = "集录定轨 (90 抽)";
+          tag.className = "text-[11px] px-2.5 py-0.5 rounded-md bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 font-medium";
+        } else if (state.currentPool === "100") {
+          tag.innerText = "新手祈愿 (20 抽)";
+          tag.className = "text-[11px] px-2.5 py-0.5 rounded-md bg-purple-500/20 text-purple-300 border border-purple-500/40 font-medium";
         } else {
-          tag.innerText = "小保底 50/50";
-          tag.className = "text-[11px] px-2.5 py-0.5 rounded-md bg-yellow-500/10 text-yellow-400 border border-yellow-500/30 font-medium";
+          tag.innerText = "常驻保底 (90 抽)";
+          tag.className = "text-[11px] px-2.5 py-0.5 rounded-md bg-slate-800 text-slate-400 border border-slate-700";
         }
-      } else if (state.currentPool === "2") {
-        tag.innerText = "100% 专武 (永不歪)";
-        tag.className = "text-[11px] px-2.5 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold";
       } else {
-        tag.innerText = "常驻保底";
-        tag.className = "text-[11px] px-2.5 py-0.5 rounded-md bg-slate-800 text-slate-400 border border-slate-700";
+        if (state.currentPool === "1") {
+          if (pool.isGuaranteedNext) {
+            tag.innerText = "大保底 100% UP";
+            tag.className = "text-[11px] px-2.5 py-0.5 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold";
+          } else {
+            tag.innerText = "小保底 50/50";
+            tag.className = "text-[11px] px-2.5 py-0.5 rounded-md bg-yellow-500/10 text-yellow-400 border border-yellow-500/30 font-medium";
+          }
+        } else if (state.currentPool === "2") {
+          tag.innerText = "100% 专武 (永不歪)";
+          tag.className = "text-[11px] px-2.5 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold";
+        } else if (state.currentPool === "5") {
+          tag.innerText = "新手唤取 (50 抽 8折)";
+          tag.className = "text-[11px] px-2.5 py-0.5 rounded-md bg-purple-500/20 text-purple-300 border border-purple-500/40 font-medium";
+        } else {
+          tag.innerText = "常驻保底 (80 抽)";
+          tag.className = "text-[11px] px-2.5 py-0.5 rounded-md bg-slate-800 text-slate-400 border border-slate-700";
+        }
       }
 
       // 出金统计
@@ -1598,7 +1880,7 @@
     // 渲染条形出金流水（完全还原工坊经典进度条形式，直观、清晰）
     function renderLinearWaterfall(pool) {
       const container = document.getElementById("linearFlowContainer");
-      if (state.currentPool === "1") {
+      if (state.currentPool === "1" || state.currentPool === "301") {
         const lostText = pool.lostCount ? ` (歪 ${pool.lostCount} 次)` : '';
         document.getElementById("fiveStarsBadge").innerText = `共 ${pool.fiveStarsCount} 个UP金${lostText}`;
       } else {
@@ -1618,7 +1900,7 @@
             </div>
           </div>
 
-          <div class="w-7 flex-shrink-0 text-right text-[11px] text-slate-500 font-mono">
+          <div class="w-10 flex-shrink-0 text-right text-[11px] text-slate-500 font-mono">
             ${pool.currentPity}/${pool.maxPity}
           </div>
         </div>
@@ -1635,6 +1917,8 @@
       }
 
       // 2. 依次渲染每次出金行（由新到旧倒序）
+      const maxP = pool.maxPity || (state.currentGame === "genshin" ? (state.currentPool === "302" ? 80 : (state.currentPool === "100" ? 20 : 90)) : 80);
+
       html += pool.fiveStars.map(f => {
         let barBg;
         let labelText;
@@ -1643,7 +1927,7 @@
           barBg = "bg-gradient-to-r from-slate-600 via-slate-700 to-slate-800 text-slate-300 font-bold border border-slate-600/30";
           labelText = `${f.pity} 抽 (小保底歪)`;
         } else {
-          const isGold = f.pity >= 60;
+          const isGold = f.pity >= (maxP >= 90 ? 70 : 60);
           barBg = isGold 
             ? "bg-gradient-to-r from-amber-400 via-amber-500 to-yellow-500 shadow-amber-500/20 text-slate-950 font-black"
             : "bg-gradient-to-r from-emerald-400 to-green-600 shadow-emerald-500/20 text-white font-black";
@@ -1655,14 +1939,19 @@
           }
         }
         
-        const widthPct = Math.max(14, Math.min(100, Math.round((f.pity / 80) * 100)));
+        const widthPct = Math.max(14, Math.min(100, Math.round((f.pity / maxP) * 100)));
+
+        const isWeaponItem = f.category === "武器" || state.currentPool === "2" || state.currentPool === "4" || state.currentPool === "302";
+        const fallback = generateItemBadgeAvatar(f.name, 5, isWeaponItem ? "武器" : "角色");
+        const avatarSrc = f.avatar || fallback;
+        const imgFit = isWeaponItem ? 'object-contain p-0.5' : 'object-cover';
 
         return `
           <div class="flex items-center space-x-3 hover:bg-slate-900/50 p-1.5 rounded-xl transition">
             <div class="relative w-10 h-10 rounded-lg overflow-hidden bg-slate-950 border-2 ${
               f.isLost5050 ? 'border-slate-600 opacity-75' : 'border-amber-400'
             } flex items-center justify-center flex-shrink-0 shadow">
-              <img src="${f.avatar || 'https://api.iconify.design/lucide:user.svg'}" alt="${f.name}" class="w-full h-full object-cover" onerror="this.src='https://api.iconify.design/lucide:user.svg'">
+              <img src="${avatarSrc}" alt="${f.name}" class="w-full h-full ${imgFit}" onerror="this.src='${fallback}'">
             </div>
 
             <div class="flex-1 flex items-center min-w-0 pr-1">
@@ -1671,7 +1960,7 @@
               </div>
             </div>
 
-            <div class="w-7 flex justify-center items-center flex-shrink-0">
+            <div class="w-10 flex justify-center items-center flex-shrink-0">
               ${f.isLost5050 ? `<div class="stamp-wai" title="小保底歪常驻">歪</div>` : ''}
             </div>
           </div>
@@ -1685,12 +1974,16 @@
     function renderCharts(pool) {
       if (!distChart || !ratioChart) return;
 
-      const ranges = ["1-20 (极欧)", "21-50 (优良)", "51-65 (正常)", "66-80 (保底)"];
+      const isGenshin90 = state.currentGame === "genshin" && (pool.maxPity === 90 || state.currentPool === "301" || state.currentPool === "200" || state.currentPool === "500");
+      const ranges = isGenshin90
+        ? ["1-20 (极欧)", "21-50 (优良)", "51-73 (正常)", "74-90 (保底)"]
+        : ["1-20 (极欧)", "21-50 (优良)", "51-65 (正常)", "66-80 (保底)"];
       const counts = [0, 0, 0, 0];
+      const normThreshold = isGenshin90 ? 73 : 65;
       (pool.fiveStars || []).forEach(f => {
         if (f.pity <= 20) counts[0]++;
         else if (f.pity <= 50) counts[1]++;
-        else if (f.pity <= 65) counts[2]++;
+        else if (f.pity <= normThreshold) counts[2]++;
         else counts[3]++;
       });
 
@@ -1755,7 +2048,8 @@
     async function loadPoolRecords() {
       const activePlayer = state.analysisData ? state.analysisData.activePlayer : null;
       try {
-        const resp = await fetch(`/api/pool_records?poolType=${state.currentPool}&playerId=${activePlayer || ''}`);
+        const base = getApiUrl("/pool_records");
+        const resp = await fetch(`${base}?poolType=${state.currentPool}&playerId=${activePlayer || ''}`);
         const res = await resp.json();
         if (res.success) {
           state.poolRecords = res.records || [];
@@ -1777,9 +2071,9 @@
 
       // 星级筛选
       if (state.currentStarFilter === "5") {
-        list = list.filter(r => r.qualityLevel === 5);
+        list = list.filter(r => (r.qualityLevel || parseInt(r.rank_type) || 3) === 5);
       } else if (state.currentStarFilter === "45") {
-        list = list.filter(r => r.qualityLevel >= 4);
+        list = list.filter(r => (r.qualityLevel || parseInt(r.rank_type) || 3) >= 4);
       }
 
       // 关键词搜索
@@ -1811,7 +2105,7 @@
 
       // 渲染单页数据
       tbody.innerHTML = pageItems.map((r, i) => {
-        const star = r.qualityLevel || 3;
+        const star = r.qualityLevel || parseInt(r.rank_type) || 3;
         let starBadge = `<span class="px-2 py-0.5 rounded text-[11px] bg-sky-500/10 text-sky-400 border border-sky-500/20 font-medium">3★</span>`;
         if (star === 5) {
           starBadge = `<span class="px-2 py-0.5 rounded text-[11px] bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold">5★</span>`;
@@ -1819,15 +2113,31 @@
           starBadge = `<span class="px-2 py-0.5 rounded text-[11px] bg-purple-500/20 text-purple-300 border border-purple-500/40 font-semibold">4★</span>`;
         }
 
+        const isWeapon = (r.resourceType === "武器" || r.item_type === "武器" || (!r.resourceType && star < 4));
+        const fallback = generateItemBadgeAvatar(r.name, star, isWeapon ? '武器' : '角色');
+        const imgFit = isWeapon ? 'object-contain p-0.5' : 'object-cover';
+        const avatarUrl = r.avatar || fallback;
+
+        const borderClass = star === 5 
+          ? 'border-amber-400/80 shadow shadow-amber-500/20' 
+          : (star === 4 ? 'border-purple-400/60' : 'border-slate-700/80');
+
         const globalIndex = totalRecords - (startIndex + i);
 
         return `
           <tr class="hover:bg-slate-800/50 transition">
-            <td class="py-2.5 px-4 text-slate-500 font-mono">${globalIndex}</td>
-            <td class="py-2.5 px-4 font-sans font-semibold text-white">${r.name}</td>
-            <td class="py-2.5 px-4">${starBadge}</td>
-            <td class="py-2.5 px-4 text-slate-400">${r.resourceType || (star >= 4 ? '角色' : '武器')}</td>
-            <td class="py-2.5 px-4 text-slate-400 font-mono">${r.time || ''}</td>
+            <td class="py-2 px-4 text-slate-500 font-mono">${globalIndex}</td>
+            <td class="py-2 px-4 font-sans font-semibold text-white">
+              <div class="flex items-center space-x-2.5">
+                <div class="w-8 h-8 rounded-lg overflow-hidden bg-slate-900 border ${borderClass} flex-shrink-0 flex items-center justify-center">
+                  <img src="${avatarUrl}" alt="${r.name}" class="w-full h-full ${imgFit}" onerror="this.src='${fallback}'" />
+                </div>
+                <span class="truncate">${r.name}</span>
+              </div>
+            </td>
+            <td class="py-2 px-4">${starBadge}</td>
+            <td class="py-2 px-4 text-slate-400">${r.resourceType || r.item_type || (star >= 4 ? '角色' : '武器')}</td>
+            <td class="py-2 px-4 text-slate-400 font-mono">${r.time || ''}</td>
           </tr>
         `;
       }).join("");

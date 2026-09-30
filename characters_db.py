@@ -27,6 +27,7 @@ ID_MAP = {
     1303: "渊武",
     1305: "相里要",
     1307: "卜灵",
+    1311: "心",
     1401: "炽霞",
     1402: "秧秧",
     1403: "秋水",
@@ -42,6 +43,7 @@ ID_MAP = {
     1602: "丹瑾",
     # 五星武器
     21020086: "霜天灼刃",
+    21050116: "玉阋玄华",
     # 四星武器 (基于用户日志实际抽到 ID 补齐)
     21020044: "不归孤军",
     21010044: "永夜长明",
@@ -121,6 +123,15 @@ ALIAS_MAP = {
     "EmeraldOfGenesis": "千古汧流",
     "核熔星盘": "核熔星盘",
     "悖论喷流": "悖论喷流",
+    "心": "心",
+    "Hsin": "心",
+    "Xin": "心",
+    "心月狐": "心",
+    "玉阋玄华": "玉阋玄华",
+    "YuXiXuanHua": "玉阋玄华",
+    "Yu Xi Xuan Hua": "玉阋玄华",
+    "BloomingJadehaven": "玉阋玄华",
+    "Blooming Jadehaven": "玉阋玄华",
 }
 
 # 属性定义与色彩
@@ -140,6 +151,15 @@ STANDARD_FIVE_STARS = {
     "鉴心",
     "卡卡罗",
     "凌阳"
+}
+
+# 常驻五星武器列表
+STANDARD_FIVE_WEAPONS = {
+    "浩境粼光",
+    "停驻之烟",
+    "擎渊怒涛",
+    "漪澜浮录",
+    "千古汧流"
 }
 
 # 角色资料表
@@ -169,6 +189,7 @@ CHARACTERS = {
     "景燃": {"star": 5, "element": "热熔", "weapon": "重刃", "type": "UP", "avatar": IMG_BASE + "Jingran.png"},
     "达妮娅": {"star": 5, "element": "热熔", "weapon": "音感仪", "type": "UP", "avatar": IMG_BASE + "Denia.png"},
     "莫宁": {"star": 5, "element": "热熔", "weapon": "重刃", "type": "UP", "avatar": IMG_BASE + "Mornye.png"},
+    "心": {"star": 5, "element": "导电", "weapon": "音感仪", "type": "UP", "avatar": IMG_BASE + "Hsin.png"},
 
     # 5星常驻角色
     "维里奈": {"star": 5, "element": "衍射", "weapon": "音感仪", "type": "常驻", "avatar": IMG_BASE + "Verina.png"},
@@ -208,6 +229,7 @@ WEAPONS_5STAR = {
     "诸方玄枢": {"star": 5, "weapon": "臂铠", "type": "UP", "avatar": WEAPON_BASE + "VeritysHandle.png"},
     "序奇微芒": {"star": 5, "weapon": "音感仪", "type": "UP", "avatar": WEAPON_BASE + "StellarSymphony.png"},
     "裁春": {"star": 5, "weapon": "迅刀", "type": "UP", "avatar": WEAPON_BASE + "RedSpring.png"},
+    "玉阋玄华": {"star": 5, "weapon": "音感仪", "type": "UP", "avatar": WEAPON_BASE + "BloomingJadehaven.png"},
     
     # 常驻五星武器
     "浩境粼光": {"star": 5, "weapon": "重刃", "type": "常驻", "avatar": WEAPON_BASE + "LustrousRazor.png"},
@@ -267,6 +289,14 @@ def get_item_info(name, quality_level=None, resource_type=None, resource_id=None
     if name in ALIAS_MAP:
         name = ALIAS_MAP[name]
 
+    LOCAL_AVATAR_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static", "images", "avatars")
+    local_avatar = ""
+    for ext in [".png", ".jpg", ".jpeg", ".webp"]:
+        local_path = os.path.join(LOCAL_AVATAR_DIR, f"{name}{ext}")
+        if os.path.exists(local_path):
+            local_avatar = f"/images/avatars/{name}{ext}"
+            break
+
     if name in CHARACTERS:
         c = CHARACTERS[name]
         elem_info = ELEMENTS.get(c["element"], {})
@@ -280,7 +310,7 @@ def get_item_info(name, quality_level=None, resource_type=None, resource_id=None
             "weapon": c["weapon"],
             "isUp": c["type"] == "UP",
             "isStandard": name in STANDARD_FIVE_STARS,
-            "avatar": c.get("avatar", "")
+            "avatar": local_avatar or c.get("avatar", "")
         }
     
     if name in WEAPONS_5STAR:
@@ -315,17 +345,38 @@ def get_item_info(name, quality_level=None, resource_type=None, resource_id=None
     
     star = quality_level or 3
     cat = resource_type or ("角色" if star >= 4 else "武器")
+    
+    # 针对未收录五星物品的智能兜底：只要不在常驻列表中，默认认定为 UP
+    if star == 5:
+        if cat == "角色":
+            is_standard = name in STANDARD_FIVE_STARS
+        else:
+            is_standard = name in STANDARD_FIVE_WEAPONS
+        is_up = not is_standard
+        elem_color = "#facc15"
+        elem_bg = "rgba(250, 204, 21, 0.15)"
+    elif star == 4:
+        is_standard = True
+        is_up = False
+        elem_color = "#c084fc"
+        elem_bg = "rgba(192, 132, 252, 0.15)"
+    else:
+        is_standard = True
+        is_up = False
+        elem_color = "#94a3b8"
+        elem_bg = "rgba(148, 163, 184, 0.1)"
+
     return {
         "name": name,
         "category": cat,
         "star": star,
         "element": "常规",
-        "elementColor": "#94a3b8" if star == 3 else "#c084fc",
-        "elementBg": "rgba(148, 163, 184, 0.1)",
+        "elementColor": elem_color,
+        "elementBg": elem_bg,
         "weapon": "",
-        "isUp": False,
-        "isStandard": True,
-        "avatar": ""
+        "isUp": is_up,
+        "isStandard": is_standard,
+        "avatar": local_avatar or ""
     }
 
 # ================= 自定义配置管理与持久化 =================
@@ -406,7 +457,7 @@ def get_all_config_data():
             "id": name_to_id.get(name, "")
         })
 
-    # 武器
+    # 5星武器
     for name, w in WEAPONS_5STAR.items():
         chars_list.append({
             "name": name,
@@ -415,6 +466,19 @@ def get_all_config_data():
             "element": "武器",
             "weapon": w.get("weapon", "迅刀"),
             "type": w.get("type", "UP"),
+            "avatar": w.get("avatar", ""),
+            "id": name_to_id.get(name, "")
+        })
+
+    # 4星武器
+    for name, w in WEAPONS_4STAR.items():
+        chars_list.append({
+            "name": name,
+            "category": "武器",
+            "star": 4,
+            "element": "武器",
+            "weapon": w.get("weapon", "迅刀"),
+            "type": "4星",
             "avatar": w.get("avatar", ""),
             "id": name_to_id.get(name, "")
         })
