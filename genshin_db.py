@@ -23,7 +23,8 @@ GENSHIN_POOL_NAMES = {
 
 # 原神常驻五星角色 (在角色限定池中抽到代表“歪”)
 GENSHIN_STANDARD_5STAR_CHARS = {
-    "琴", "迪卢克", "莫娜", "七七", "刻晴", "提纳里", "迪希雅"
+    "琴", "迪卢克", "莫娜", "七七", "刻晴", "提纳里", "迪希雅",
+    "梦见月瑞希", "梦见月"
 }
 
 # 原神常驻五星武器 (在限定武器池中抽到代表“歪”)
@@ -52,6 +53,8 @@ GENSHIN_CHARACTERS_5STAR = {
     "刻晴": {"element": "雷", "weapon": "单手剑", "standard": True, "icon": "UI_AvatarIcon_Keqing.png"},
     "提纳里": {"element": "草", "weapon": "弓", "standard": True, "icon": "UI_AvatarIcon_Tighnari.png"},
     "迪希雅": {"element": "火", "weapon": "双手剑", "standard": True, "icon": "UI_AvatarIcon_Dehya.png"},
+    "梦见月瑞希": {"element": "风", "weapon": "法器", "standard": True, "icon": "UI_AvatarIcon_Mizuki.png", "avatar": "/images/avatars/UI_AvatarIcon_Mizuki.png"},
+    "梦见月": {"element": "风", "weapon": "法器", "standard": True, "icon": "UI_AvatarIcon_Mizuki.png", "avatar": "/images/avatars/UI_AvatarIcon_Mizuki.png"},
 
     # 1.x 时代
     "温迪": {"element": "风", "weapon": "弓", "standard": False, "icon": "UI_AvatarIcon_Venti.png"},
@@ -105,6 +108,7 @@ GENSHIN_CHARACTERS_5STAR = {
     "茜特菈莉": {"element": "冰", "weapon": "法器", "standard": False, "icon": "UI_AvatarIcon_Citlali.png"},
     "玛薇卡": {"element": "火", "weapon": "双手剑", "standard": False, "icon": "UI_AvatarIcon_Mavuika.png"},
     "沃雅妮莎": {"element": "水", "weapon": "法器", "standard": False, "icon": "UI_AvatarIcon_Vodyanitsa.png", "avatar": "/images/avatars/UI_AvatarIcon_Vodyanitsa.png"},
+    "瓦蕾莎": {"element": "雷", "weapon": "法器", "standard": False, "icon": "UI_AvatarIcon_Varesa.png"},
 
     # 联动/特殊
     "埃洛伊": {"element": "冰", "weapon": "弓", "standard": True, "icon": "UI_AvatarIcon_Aloy.png"}
@@ -159,6 +163,7 @@ GENSHIN_WEAPONS_5STAR = {
     "万世流涌大典": {"type": "法器", "standard": False, "icon": "UI_EquipIcon_Catalyst_Iudex.png"},
     "鹤鸣余音": {"type": "法器", "standard": False, "icon": "UI_EquipIcon_Catalyst_Crane.png"},
     "冲浪时光": {"type": "法器", "standard": False, "icon": "UI_EquipIcon_Catalyst_Mualani.png"},
+    "寝正月初晴": {"type": "法器", "standard": False, "icon": "UI_EquipIcon_Catalyst_Mizuki.png"},
 
     # 弓
     "天空之翼": {"type": "弓", "standard": True, "icon": "UI_EquipIcon_Bow_Dvalin.png"},
@@ -217,6 +222,7 @@ GENSHIN_CHARACTERS_4STAR = {
     "丽莎": {"element": "雷", "weapon": "法器", "icon": "UI_AvatarIcon_Lisa.png"},
     "辛焱": {"element": "火", "weapon": "双手剑", "icon": "UI_AvatarIcon_Xinyan.png"},
     "蓝砚": {"element": "风", "weapon": "法器", "icon": "UI_AvatarIcon_Lanyan.png"},
+    "伊安珊": {"element": "雷", "weapon": "长柄武器", "icon": "UI_AvatarIcon_Iansan.png"},
 }
 
 # 常用四星武器表
@@ -321,9 +327,19 @@ def get_genshin_avatar_url(name: str, item_type: str = "") -> str:
 
 def is_genshin_standard_5star(name: str, item_type: str = "角色") -> bool:
     """判断是否为原神常驻五星（即小保底歪卡）"""
-    if "角色" in item_type or name in GENSHIN_CHARACTERS_5STAR:
-        return name in GENSHIN_STANDARD_5STAR_CHARS
-    if "武器" in item_type or name in GENSHIN_WEAPONS_5STAR:
+    # 1. 优先根据 5 星角色库的 standard 配置判断
+    if name in GENSHIN_CHARACTERS_5STAR:
+        return bool(GENSHIN_CHARACTERS_5STAR[name].get("standard", False))
+    # 2. 优先根据 5 星武器库的 standard 配置判断
+    if name in GENSHIN_WEAPONS_5STAR:
+        return bool(GENSHIN_WEAPONS_5STAR[name].get("standard", False))
+    # 3. 查常驻五星角色名单与模糊匹配
+    if "角色" in item_type or not item_type:
+        if name in GENSHIN_STANDARD_5STAR_CHARS:
+            return True
+        if any(std in name for std in ("梦见月", "提纳里", "迪希雅", "琴", "迪卢克", "莫娜", "七七", "刻晴")):
+            return True
+    if "武器" in item_type:
         return name in GENSHIN_STANDARD_5STAR_WEAPONS
     return False
 

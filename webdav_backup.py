@@ -35,7 +35,7 @@ def _get_auth_header(username: str, password: str) -> str:
     return f"Basic {token}"
 
 def load_webdav_config() -> Dict[str, Any]:
-    """读取保存的 WebDAV 配置"""
+    """读取保存的 WebDAV 配置，并自动归一化多版本字段"""
     default_cfg = {
         "enabled": False,
         "provider": "jianguoyun",
@@ -53,29 +53,99 @@ def load_webdav_config() -> Dict[str, Any]:
         with open(CONFIG_PATH, "r", encoding="utf-8") as f:
             cfg = json.load(f)
             default_cfg.update(cfg)
-            return default_cfg
     except Exception:
-        return default_cfg
+        pass
+
+    # 归一化字段别名兼容
+    if "server_url" in default_cfg and default_cfg["server_url"]:
+        default_cfg["url"] = default_cfg["server_url"]
+    if "remote_dir" in default_cfg and default_cfg["remote_dir"]:
+        default_cfg["remoteFolder"] = default_cfg["remote_dir"]
+    if "auto_sync" in default_cfg:
+        default_cfg["autoBackupOnSync"] = default_cfg["auto_sync"]
+
+    return default_cfg
 
 def save_webdav_config(new_cfg: Dict[str, Any]) -> Dict[str, Any]:
-    """持久化保存 WebDAV 配置"""
+    """持久化保存 WebDAV 配置，双向映射兼容字段"""
     os.makedirs(DATA_DIR, exist_ok=True)
     cfg = load_webdav_config()
     cfg.update(new_cfg)
+
+    # 兼容下划线和驼峰互转
+    if "server_url" in new_cfg:
+        cfg["url"] = new_cfg["server_url"]
+    if "remote_dir" in new_cfg:
+        cfg["remoteFolder"] = new_cfg["remote_dir"]
+    if "auto_sync" in new_cfg:
+        cfg["autoBackupOnSync"] = bool(new_cfg["auto_sync"])
+
+    cfg["server_url"] = cfg.get("url", JIANGUOYUN_DEFAULT_URL)
+    cfg["remote_dir"] = cfg.get("remoteFolder", DEFAULT_REMOTE_FOLDER)
+    cfg["auto_sync"] = cfg.get("autoBackupOnSync", True)
+
     with open(CONFIG_PATH, "w", encoding="utf-8") as f:
         json.dump(cfg, f, ensure_ascii=False, indent=2)
     return cfg
 
 def sanitize_config_for_frontend(cfg: Dict[str, Any]) -> Dict[str, Any]:
-    """返回给前端的脱敏配置（密码掩码）"""
+    """返回给前端的脱敏配置（双向字段映射，密码掩码）"""
     safe = dict(cfg)
-    if safe.get("password"):
-        safe["hasPassword"] = True
-        safe["passwordMasked"] = "•" * min(8, len(safe["password"]))
-    else:
-        safe["hasPassword"] = False
-        safe["passwordMasked"] = ""
+    has_pwd = bool(safe.get("password"))
+    pwd_masked = "•" * min(8, len(safe["password"])) if has_pwd else ""
+    
+    # 保证前端与后端双向同名取值皆可用
+    url_val = safe.get("url") or safe.get("server_url") or JIANGUOYUN_DEFAULT_URL
+    folder_val = safe.get("remoteFolder") or safe.get("remote_dir") or DEFAULT_REMOTE_FOLDER
+    auto_val = safe.get("autoBackupOnSync", safe.get("auto_sync", True))
+
+    safe["url"] = url_val
+    safe["server_url"] = url_val
+    safe["remoteFolder"] = folder_val
+    safe["remote_dir"] = folder_val
+    safe["autoBackupOnSync"] = auto_val
+    safe["auto_sync"] = auto_val
+
+    safe["hasPassword"] = has_pwd
+    safe["has_password"] = has_pwd
+    safe["passwordMasked"] = pwd_masked
+    safe["last_backup_time"] = safe.get("lastBackupTime", "")
+    safe["last_backup_status"] = safe.get("lastBackupStatus", "")
     return safe
+
+def trigger_auto_backup_if_enabled(reason: str = "sync", async_run: bool = True):
+    """
+    检查是否已启用坚果云并开启同步自动备份；若开启，则在后台线程静默执行备份
+    :param reason: 触发备份的操作原因（如 'sync'、'import' 等）
+    :param async_run: 是否在独立守护线程中运行以避免阻塞前台响应
+    """
+    import threading
+    cfg = load_webdav_config()
+    enabled = cfg.get("enabled", False)
+    auto_backup = cfg.get("autoBackupOnSync", cfg.get("auto_sync", True))
+    username = cfg.get("username", "").strip()
+    password = cfg.get("password", "").strip()
+
+    if not (enabled and auto_backup and username and password):
+        return False, "坚果云自动备份未开启或凭据未配置"
+
+    def _do_backup():
+        try:
+            ok, msg, _ = upload_backup_to_webdav(cfg)
+            if ok:
+                sys.stderr.write(f"[{datetime.now().strftime('%H:%M:%S')}] [WebDAV] 数据同步自动备份成功: {msg}\n")
+            else:
+                sys.stderr.write(f"[{datetime.now().strftime('%H:%M:%S')}] [WebDAV] 数据同步自动备份失败: {msg}\n")
+        except Exception as e:
+            sys.stderr.write(f"[{datetime.now().strftime('%H:%M:%S')}] [WebDAV] 自动备份异常: {e}\n")
+
+    if async_run:
+        t = threading.Thread(target=_do_backup, daemon=True)
+        t.start()
+        return True, "已触发后台异步云端备份"
+    else:
+        _do_backup()
+        return True, "已完成云端备份"
 
 def _build_url(base_url: str, folder: str, filename: str = "") -> str:
     """拼装规范的 WebDAV 资源 URL"""

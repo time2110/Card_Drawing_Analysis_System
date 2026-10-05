@@ -92,7 +92,8 @@ from webdav_backup import (
     upload_backup_to_webdav,
     restore_backup_from_webdav,
     build_full_backup_payload,
-    restore_from_payload
+    restore_from_payload,
+    trigger_auto_backup_if_enabled
 )
 
 DATA_PATH = os.path.join(APP_DIR, "data", "gacha_records.json")
@@ -186,12 +187,7 @@ def run_auto_sync_all():
 
         # 3. 若有新增记录且开启了坚果云自动备份，自动静默同步至云端
         if (w_added > 0 or g_added > 0):
-            try:
-                wcfg = load_webdav_config()
-                if wcfg.get("enabled") and wcfg.get("autoBackupOnSync") and wcfg.get("username") and wcfg.get("password"):
-                    upload_backup_to_webdav(wcfg)
-            except Exception:
-                pass
+            trigger_auto_backup_if_enabled(reason="auto_sync", async_run=True)
     finally:
         latest_auto_sync_status["running"] = False
         auto_sync_lock.release()
@@ -601,6 +597,8 @@ class GachaRequestHandler(BaseHTTPRequestHandler):
                 total_added = 0
                 for pt, rlist in fetched_pools.items():
                     total_added += genshin_db_manager.merge_records(uid, pt, rlist)
+                if total_added > 0:
+                    trigger_auto_backup_if_enabled(reason="genshin_sync", async_run=True)
                 analysis = genshin_db_manager.get_analysis_for_player(uid)
                 self.send_json(200, {
                     "success": True,
@@ -678,6 +676,9 @@ class GachaRequestHandler(BaseHTTPRequestHandler):
                 })
                 return
 
+            if total_added > 0:
+                trigger_auto_backup_if_enabled(reason="wuwa_sync", async_run=True)
+
             analysis = db_manager.get_analysis_for_player(player_id)
             self.send_json(200, {
                 "success": True,
@@ -741,6 +742,9 @@ class GachaRequestHandler(BaseHTTPRequestHandler):
                     added, _ = db_manager.merge_records(pid, pt, rlist)
                     imported_records += added
                 imported_players += 1
+
+            if imported_records > 0:
+                trigger_auto_backup_if_enabled(reason="import", async_run=True)
 
             self.send_json(200, {
                 "success": True,
